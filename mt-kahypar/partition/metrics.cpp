@@ -73,6 +73,52 @@ struct ObjectiveFunction<PartitionedHypergraph, Objective::steiner_tree> {
   }
 };
 
+template<typename PartitionedHypergraph>
+struct ObjectiveFunction<PartitionedHypergraph, Objective::pimod> {
+    double operator()(const PartitionedHypergraph& phg, const HyperedgeID& he) const {
+        // compute contribution of current hyperedge to hypergraph pi modularity
+        double pi_mod_contribution = 0;
+
+        // map to store cluster ID as key and fraction of pins in that cluster as loyalty value
+        std::unordered_map<PartitionID, double> per_cluster_loyalty;
+
+        // get total number of pins of the hyperedge
+        HypernodeID totalPins = phg.edgeSize(he);
+        auto vol_H = static_cast<double>(phg.initialNumPins());
+        auto m = static_cast<double>(phg.initialNumEdges());
+
+        // Calculate gamma
+        double gamma = (vol_H - 2 * m) / (vol_H - m);
+
+        // go over all pins of the hyperedge and populate the map with loyalties for each incident cluster
+        for (const HypernodeID& pin : phg.pins(he)) {
+            PartitionID clusterID = phg.partID(pin);
+            per_cluster_loyalty[clusterID] += 1.0 / totalPins;
+        }
+
+        for (const auto& [clusterID, loyalty] : per_cluster_loyalty) {
+            //std::cout << "Cluster: " << clusterID << ", Loyalty: " << loyalty << ", Volume: " << phg.partWeight(clusterID) << std::endl;
+
+            // Apply function rho to loyalty -> set to linear-over-log as suggested by authors
+            double loyalty_rho = loyalty / std::log(1.0 / loyalty + 1.0);
+
+            double theta = 0.7;
+
+            // Calculate eta for the current cluster C
+            auto vol_C = static_cast<double>(phg.partWeight(clusterID));
+            double eta = theta * (1.0 - (vol_C / vol_H));
+
+            // Calculate expected edges in cluster according to Random Hypergraph Expansion Model
+            double expected_edges = std::pow(1 - eta, 2) * (1 + (gamma * eta) / (1 - gamma));
+
+            pi_mod_contribution += loyalty_rho - expected_edges;
+        }
+        //std::cout << "Total Contribution: " << pi_mod_contribution << std::endl;
+        //std::cout << "----------" << std::endl;
+        return -1 * pi_mod_contribution;
+    }
+};
+
 template<Objective objective, typename PartitionedHypergraph>
 HyperedgeWeight compute_objective_parallel(const PartitionedHypergraph& phg) {
   ObjectiveFunction<PartitionedHypergraph, objective> func;
@@ -125,6 +171,9 @@ HyperedgeWeight quality(const PartitionedHypergraph& hg,
     case Objective::steiner_tree:
       return parallel ? compute_objective_parallel<Objective::steiner_tree>(hg) :
         compute_objective_sequentially<Objective::steiner_tree>(hg);
+    case Objective::pimod:
+      return parallel ? compute_objective_parallel<Objective::pimod>(hg) :
+        compute_objective_sequentially<Objective::pimod>(hg);
     default: throw InvalidParameterException("Unknown Objective");
   }
   return 0;
@@ -139,6 +188,7 @@ HyperedgeWeight contribution(const PartitionedHypergraph& hg,
     case Objective::km1: return contribution<Objective::km1>(hg, he);
     case Objective::soed: return contribution<Objective::soed>(hg, he);
     case Objective::steiner_tree: return contribution<Objective::steiner_tree>(hg, he);
+    case Objective::pimod: return contribution<Objective::pimod>(hg, he);
     default: throw InvalidParameterException("Unknown Objective");
   }
   return 0;

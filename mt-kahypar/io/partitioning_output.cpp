@@ -220,7 +220,11 @@ namespace mt_kahypar::io {
     HypernodeWeight max_part_weight = 0;
     HypernodeID max_part_size = 0;
     size_t num_imbalanced_blocks = 0;
+    size_t num_clusters = 0;
     for (PartitionID i = 0; i < context.partition.k; ++i) {
+      if(hypergraph.partWeight(i) != 0) {
+          num_clusters++;
+      }
       avg_part_weight += hypergraph.partWeight(i);
       if ( hypergraph.partWeight(i) < min_part_weight ) {
         min_block = i;
@@ -255,6 +259,7 @@ namespace mt_kahypar::io {
         if ( is_imbalanced ) std::cout << END;
       }
     } else {
+      std::cout << "Number of Clusters found: " << num_clusters << std::endl;
       std::cout << "Avg Block Weight = " << avg_part_weight << std::endl;
       std::cout << "Min Block Weight = " << min_part_weight
                 << (min_part_weight <= context.partition.max_part_weights[min_block] ? " <= " : " > ")
@@ -268,15 +273,15 @@ namespace mt_kahypar::io {
           const bool is_imbalanced =
             hypergraph.partWeight(i) > context.partition.max_part_weights[i] ||
             ( context.partition.preset_type != PresetType::large_k && hypergraph.partWeight(i) == 0 );
-          if ( is_imbalanced ) {
-            std::cout << RED << "|block " << std::left  << std::setw(k_digits) << i
-                      << std::setw(1) << "| = "  << std::right << std::setw(part_digits) << part_sizes[i]
-                      << std::setw(1) << "  w( "  << std::right << std::setw(k_digits) << i
-                      << std::setw(1) << " ) = "  << std::right << std::setw(part_digits) << hypergraph.partWeight(i)
-                      << std::setw(1) << "  max( " << std::right << std::setw(k_digits) << i
-                      << std::setw(1) << " ) = "  << std::right << std::setw(part_digits) << context.partition.max_part_weights[i]
-                      << END << std::endl;
-          }
+//          if ( is_imbalanced ) {
+//            std::cout << RED << "|block " << std::left  << std::setw(k_digits) << i
+//                      << std::setw(1) << "| = "  << std::right << std::setw(part_digits) << part_sizes[i]
+//                      << std::setw(1) << "  w( "  << std::right << std::setw(k_digits) << i
+//                      << std::setw(1) << " ) = "  << std::right << std::setw(part_digits) << hypergraph.partWeight(i)
+//                      << std::setw(1) << "  max( " << std::right << std::setw(k_digits) << i
+//                      << std::setw(1) << " ) = "  << std::right << std::setw(part_digits) << context.partition.max_part_weights[i]
+//                      << END << std::endl;
+//          }
         }
       }
     }

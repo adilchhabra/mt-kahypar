@@ -80,6 +80,7 @@ enum class Objective : uint8_t {
   km1,
   soed,
   steiner_tree,
+  pimod,
   UNDEFINED
 };
 
@@ -90,6 +91,7 @@ enum class GainPolicy : uint8_t {
   steiner_tree,
   cut_for_graphs,
   steiner_tree_for_graphs,
+  pimod,
   none
 };
 

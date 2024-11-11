@@ -42,6 +42,8 @@
 #include "mt-kahypar/partition/refinement/gains/cut/cut_gain_computation.h"
 #include "mt-kahypar/partition/refinement/gains/cut/cut_attributed_gains.h"
 #include "mt-kahypar/partition/refinement/gains/cut/cut_flow_network_construction.h"
+#include "mt-kahypar/partition/refinement/gains/pimod/pimod_gain_computation.h"
+#include "mt-kahypar/partition/refinement/gains/pimod/pimod_attributed_gains.h"
 #ifdef KAHYPAR_ENABLE_SOED_METRIC
 #include "mt-kahypar/partition/refinement/gains/soed/soed_attributed_gains.h"
 #include "mt-kahypar/partition/refinement/gains/soed/soed_gain_computation.h"
@@ -86,6 +88,15 @@ struct CutGainTypes : public kahypar::meta::PolicyBase {
   using DeltaGainCache = DeltaCutGainCache;
   using Rollback = CutRollback;
   using FlowNetworkConstruction = CutFlowNetworkConstruction;
+};
+
+struct PiModGainTypes : public kahypar::meta::PolicyBase {
+    using GainComputation = PiModGainComputation;
+    using AttributedGains = PiModAttributedGains;
+    using GainCache = Km1GainCache;
+    using DeltaGainCache = DeltaKm1GainCache;
+    using Rollback = Km1Rollback;
+    using FlowNetworkConstruction = Km1FlowNetworkConstruction;
 };
 
 #ifdef KAHYPAR_ENABLE_SOED_METRIC
@@ -150,7 +161,8 @@ struct GraphAndGainTypes : public kahypar::meta::PolicyBase {
 
 
 using GainTypes = kahypar::meta::Typelist<Km1GainTypes,
-                                          CutGainTypes
+                                          CutGainTypes,
+                                          PiModGainTypes
                                           ENABLE_SOED(COMMA SoedGainTypes)
                                           ENABLE_STEINER_TREE(COMMA SteinerTreeGainTypes)
                                           ENABLE_GRAPHS(COMMA CutGainForGraphsTypes)
@@ -158,7 +170,8 @@ using GainTypes = kahypar::meta::Typelist<Km1GainTypes,
 
 #define _LIST_HYPERGRAPH_COMBINATIONS(TYPE_TRAITS)                                     \
   GraphAndGainTypes<TYPE_TRAITS, Km1GainTypes>,                                           \
-  GraphAndGainTypes<TYPE_TRAITS, CutGainTypes>                                            \
+  GraphAndGainTypes<TYPE_TRAITS, CutGainTypes>,                                         \
+  GraphAndGainTypes<TYPE_TRAITS, PiModGainTypes>                                            \
   ENABLE_SOED(COMMA GraphAndGainTypes<TYPE_TRAITS COMMA SoedGainTypes>)                   \
   ENABLE_STEINER_TREE(COMMA GraphAndGainTypes<TYPE_TRAITS COMMA SteinerTreeGainTypes>)
 
@@ -175,7 +188,8 @@ using GraphAndGainTypesList = kahypar::meta::Typelist<_LIST_HYPERGRAPH_COMBINATI
 
 #define _INSTANTIATE_CLASS_MACRO_FOR_HYPERGRAPH_COMBINATIONS(C, TYPE_TRAITS)                  \
   template class C(GraphAndGainTypes<TYPE_TRAITS COMMA Km1GainTypes>);                                \
-  template class C(GraphAndGainTypes<TYPE_TRAITS COMMA CutGainTypes>);                                \
+  template class C(GraphAndGainTypes<TYPE_TRAITS COMMA CutGainTypes>);                        \
+  template class C(GraphAndGainTypes<TYPE_TRAITS COMMA PiModGainTypes>);                                \
   ENABLE_SOED(template class C(GraphAndGainTypes<TYPE_TRAITS COMMA SoedGainTypes>);)                  \
   ENABLE_STEINER_TREE(template class C(GraphAndGainTypes<TYPE_TRAITS COMMA SteinerTreeGainTypes>);)
 
@@ -202,6 +216,7 @@ using GraphAndGainTypesList = kahypar::meta::Typelist<_LIST_HYPERGRAPH_COMBINATI
   switch ( gain_policy ) {                                                                    \
     case GainPolicy::km1: _RETURN_COMBINED_POLICY(TYPE_TRAITS, Km1GainTypes)                  \
     case GainPolicy::cut: _RETURN_COMBINED_POLICY(TYPE_TRAITS, CutGainTypes)                  \
+    case GainPolicy::pimod: _RETURN_COMBINED_POLICY(TYPE_TRAITS, PiModGainTypes)              \
     case GainPolicy::soed: ENABLE_SOED(_RETURN_COMBINED_POLICY(TYPE_TRAITS, SoedGainTypes))   \
     case GainPolicy::steiner_tree:                                                            \
       ENABLE_STEINER_TREE(_RETURN_COMBINED_POLICY(TYPE_TRAITS, SteinerTreeGainTypes))         \
