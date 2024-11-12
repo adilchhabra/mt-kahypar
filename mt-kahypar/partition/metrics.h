@@ -63,5 +63,10 @@ double imbalance(const PartitionedHypergraph& hypergraph, const Context& context
 template<typename PartitionedHypergraph>
 double approximationFactorForProcessMapping(const PartitionedHypergraph& hypergraph, const Context& context);
 
+//template<typename PartitionedHypergraph>
+//void pimod_compute(const PartitionedHypergraph& phg);
+
+template<typename PartitionedHypergraph>
+double per_edge_pi_mod(const PartitionedHypergraph& phg, const HyperedgeID he);
 }  // namespace metrics
 }  // namespace mt_kahypar

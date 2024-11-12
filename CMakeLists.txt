@@ -1,4 +1,8 @@
 cmake_minimum_required(VERSION 3.16)
+
+set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules)
 
 project(MtKaHyPar CXX C)
@@ -150,6 +154,7 @@ endif()
 include_directories(${PROJECT_SOURCE_DIR})
 find_package(Threads REQUIRED)
 message(STATUS "Found Threads: ${CMAKE_THREAD_LIBS_INIT}")
+message(STATUS "C++ Standard: ${CMAKE_CXX_STANDARD}")
 
 # Include Submodules
 add_subdirectory(external_tools/googletest EXCLUDE_FROM_ALL)
