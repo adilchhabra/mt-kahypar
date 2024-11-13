@@ -110,7 +110,7 @@ struct ObjectiveFunction<PartitionedHypergraph, Objective::pimod> {
             double eta = theta * (1.0 - (vol_C / vol_H));
 
             // Calculate expected edges in cluster according to Random Hypergraph Expansion Model
-            double expected_edges = std::pow(1 - eta, 2) * (1 + (gamma * eta) / (1 - gamma));
+            double expected_edges = std::pow(1.0 - eta, 2) * std::pow((1.0 + (gamma * eta) / (1.0 - gamma)),-1);
 
             pi_mod_contribution += loyalty_rho - expected_edges;
         }
@@ -160,10 +160,9 @@ HyperedgeWeight compute_objective_parallel(const PartitionedHypergraph& phg) {
             // Calculate eta for the current cluster C
             auto vol_C = static_cast<double>(phg.partWeight(clusterID));
             double eta = theta * (1.0 - (vol_C / vol_H));
-            auto vol_C_test =
 
             // Calculate expected edges in cluster according to Random Hypergraph Expansion Model
-            double expected_edges = std::pow(1 - eta, 2) * (1 + (gamma * eta) / (1 - gamma));
+            double expected_edges = std::pow(1.0 - eta, 2) * std::pow((1.0 + (gamma * eta) / (1.0 - gamma)),-1);
             //std::cout << "Cluster: " << clusterID << ", Loyalty: " << loyalty << ", Volume: " << phg.partWeight(clusterID) << ", Rho: " << loyalty_rho  << ", Eta: " << eta<< std::endl;
 
             pi_mod += loyalty_rho - expected_edges;
