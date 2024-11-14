@@ -777,7 +777,7 @@ namespace mt_kahypar {
              po::value<std::string>(&context.partition.graph_filename)->value_name("<string>")->required(),
              "Hypergraph filename")
             ("blocks,k",
-             po::value<PartitionID>(&context.partition.k)->value_name("<int>")->required(),
+             po::value<PartitionID>(&context.partition.k)->value_name("<int>"),
              "Number of blocks")
             ("epsilon,e",
              po::value<double>(&context.partition.epsilon)->value_name("<double>")->required(),
@@ -839,6 +839,11 @@ namespace mt_kahypar {
     }
 
     po::notify(cmd_vm);
+
+    // Validate that blocks is specified if objective is not 'pimod'
+    if (context.partition.objective != Objective::pimod && !cmd_vm.count("blocks")) {
+      throw po::error("The --blocks option is required when the objective is not 'pimod'");
+    }
 
     po::options_description ini_line_options;
     ini_line_options.add(general_options)
