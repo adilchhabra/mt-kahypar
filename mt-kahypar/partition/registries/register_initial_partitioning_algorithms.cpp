@@ -37,6 +37,7 @@
 #include "mt-kahypar/partition/initial_partitioning/bfs_initial_partitioner.h"
 #include "mt-kahypar/partition/initial_partitioning/greedy_initial_partitioner.h"
 #include "mt-kahypar/partition/initial_partitioning/label_propagation_initial_partitioner.h"
+#include "mt-kahypar/partition/initial_partitioning/singleton_initial_partitioner.h"
 #include "mt-kahypar/partition/initial_partitioning/policies/gain_computation_policy.h"
 #include "mt-kahypar/partition/initial_partitioning/policies/pq_selection_policy.h"
 
@@ -103,6 +104,10 @@ using GreedySequentialMaxNetDispatcher = kahypar::meta::StaticMultiDispatchFacto
                                           GreedySequentialMaxNetInitialPartitioner,
                                           IInitialPartitioner,
                                           kahypar::meta::Typelist<TypeTraitsList>>;
+using SingletonPartitionerDispatcher = kahypar::meta::StaticMultiDispatchFactory<
+                                        SingletonInitialPartitioner,
+                                        IInitialPartitioner,
+                                        kahypar::meta::Typelist<TypeTraitsList>>;
 
 REGISTER_DISPATCHED_INITIAL_PARTITIONER(InitialPartitioningAlgorithm::random,
                                         RandomPartitionerDispatcher,
@@ -140,4 +145,8 @@ REGISTER_DISPATCHED_INITIAL_PARTITIONER(InitialPartitioningAlgorithm::greedy_seq
                                         GreedySequentialMaxNetDispatcher,
                                         kahypar::meta::PolicyRegistry<mt_kahypar_partition_type_t>::getInstance().getPolicy(
                                          context.partition.partition_type));
+REGISTER_DISPATCHED_INITIAL_PARTITIONER(InitialPartitioningAlgorithm::singleton,
+                                        SingletonPartitionerDispatcher,
+                                        kahypar::meta::PolicyRegistry<mt_kahypar_partition_type_t>::getInstance().getPolicy(
+                                        context.partition.partition_type));
 }  // namespace mt_kahypar

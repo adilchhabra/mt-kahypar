@@ -15,6 +15,7 @@ typedef enum {
   MULTILEVEL_HYPERGRAPH_PARTITIONING,
   N_LEVEL_HYPERGRAPH_PARTITIONING,
   LARGE_K_PARTITIONING,
+  MULTILEVEL_HYPERGRAPH_CLUSTERING,
   NULLPTR_PARTITION
 } mt_kahypar_partition_type_t;
 
@@ -91,7 +92,9 @@ typedef enum {
   QUALITY,
   // n-level code with flow-based refinement
   // => highest quality configuration (corresponds to Mt-KaHyPar-Q-F)
-  HIGHEST_QUALITY
+  HIGHEST_QUALITY,
+  // computes multilevel hypergraph clustering
+  CLUSTER
 } mt_kahypar_preset_type_t;
 
 /**

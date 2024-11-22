@@ -71,6 +71,7 @@ namespace {
       case DEFAULT: return PresetType::default_preset;
       case QUALITY: return PresetType::quality;
       case HIGHEST_QUALITY: return PresetType::highest_quality;
+      case CLUSTER: return PresetType::cluster;
     }
     return PresetType::UNDEFINED;
   }
@@ -253,6 +254,7 @@ mt_kahypar_hypergraph_t mt_kahypar_create_hypergraph(const mt_kahypar_preset_typ
       case DETERMINISTIC:
       case LARGE_K:
       case DEFAULT:
+      case CLUSTER:
       case QUALITY:
         return mt_kahypar_hypergraph_t {
           reinterpret_cast<mt_kahypar_hypergraph_s*>(new ds::StaticHypergraph(
@@ -287,6 +289,7 @@ mt_kahypar_hypergraph_t mt_kahypar_create_graph(const mt_kahypar_preset_type_t p
       case DETERMINISTIC:
       case LARGE_K:
       case DEFAULT:
+      case CLUSTER:
       case QUALITY:
         return mt_kahypar_hypergraph_t {
           reinterpret_cast<mt_kahypar_hypergraph_s*>(new ds::StaticGraph(
@@ -533,6 +536,7 @@ mt_kahypar_partitioned_hypergraph_t mt_kahypar_create_partitioned_hypergraph(mt_
       case LARGE_K:
       case DETERMINISTIC:
       case DEFAULT:
+      case CLUSTER:
       case QUALITY:
         ASSERT(hypergraph.type == STATIC_GRAPH);
         return lib::create_partitoned_hypergraph<StaticPartitionedGraph>(
@@ -550,6 +554,7 @@ mt_kahypar_partitioned_hypergraph_t mt_kahypar_create_partitioned_hypergraph(mt_
           utils::cast<ds::StaticHypergraph>(hypergraph), num_blocks, partition);
       case DETERMINISTIC:
       case DEFAULT:
+      case CLUSTER:
       case QUALITY:
         ASSERT(hypergraph.type == STATIC_HYPERGRAPH);
         return lib::create_partitoned_hypergraph<StaticPartitionedHypergraph>(
@@ -585,6 +590,8 @@ void mt_kahypar_write_partition_to_file(const mt_kahypar_partitioned_hypergraph_
       io::writePartitionFile(utils::cast<DynamicPartitionedHypergraph>(partitioned_hg), partition_file); break;
     case LARGE_K_PARTITIONING:
       io::writePartitionFile(utils::cast<SparsePartitionedHypergraph>(partitioned_hg), partition_file); break;
+    case MULTILEVEL_HYPERGRAPH_CLUSTERING:
+      io::writePartitionFile(utils::cast<StaticPartitionedHypergraph>(partitioned_hg), partition_file); break;
     case NULLPTR_PARTITION: break;
   }
 }
@@ -602,6 +609,8 @@ void mt_kahypar_get_partition(const mt_kahypar_partitioned_hypergraph_t partitio
       lib::get_partition(utils::cast<DynamicPartitionedHypergraph>(partitioned_hg), partition); break;
     case LARGE_K_PARTITIONING:
       lib::get_partition(utils::cast<SparsePartitionedHypergraph>(partitioned_hg), partition); break;
+    case MULTILEVEL_HYPERGRAPH_CLUSTERING:
+      lib::get_partition(utils::cast<StaticPartitionedHypergraph>(partitioned_hg), partition); break;
     case NULLPTR_PARTITION: break;
   }
 }
@@ -619,6 +628,8 @@ void mt_kahypar_get_block_weights(const mt_kahypar_partitioned_hypergraph_t part
       lib::get_block_weights(utils::cast<DynamicPartitionedHypergraph>(partitioned_hg), block_weights); break;
     case LARGE_K_PARTITIONING:
       lib::get_block_weights(utils::cast<SparsePartitionedHypergraph>(partitioned_hg), block_weights); break;
+    case MULTILEVEL_HYPERGRAPH_CLUSTERING:
+      lib::get_block_weights(utils::cast<StaticPartitionedHypergraph>(partitioned_hg), block_weights); break;
     case NULLPTR_PARTITION: break;
   }
 }
@@ -637,6 +648,8 @@ double mt_kahypar_imbalance(const mt_kahypar_partitioned_hypergraph_t partitione
       return metrics::imbalance(utils::cast_const<DynamicPartitionedHypergraph>(partitioned_hg), c);
     case LARGE_K_PARTITIONING:
       return metrics::imbalance(utils::cast_const<SparsePartitionedHypergraph>(partitioned_hg), c);
+    case MULTILEVEL_HYPERGRAPH_CLUSTERING:
+      return metrics::imbalance(utils::cast_const<StaticPartitionedHypergraph>(partitioned_hg), c);
     case NULLPTR_PARTITION: return 0;
   }
   return 0;
@@ -654,6 +667,8 @@ mt_kahypar_hyperedge_weight_t mt_kahypar_cut(const mt_kahypar_partitioned_hyperg
       return metrics::quality(utils::cast<DynamicPartitionedHypergraph>(partitioned_hg), Objective::cut);
     case LARGE_K_PARTITIONING:
       return metrics::quality(utils::cast<SparsePartitionedHypergraph>(partitioned_hg), Objective::cut);
+    case MULTILEVEL_HYPERGRAPH_CLUSTERING:
+      return metrics::quality(utils::cast<StaticPartitionedHypergraph>(partitioned_hg), Objective::cut);
     case NULLPTR_PARTITION: return 0;
   }
   return 0;
@@ -671,6 +686,8 @@ mt_kahypar_hyperedge_weight_t mt_kahypar_km1(const mt_kahypar_partitioned_hyperg
       return metrics::quality(utils::cast<DynamicPartitionedHypergraph>(partitioned_hg), Objective::km1);
     case LARGE_K_PARTITIONING:
       return metrics::quality(utils::cast<SparsePartitionedHypergraph>(partitioned_hg), Objective::km1);
+    case MULTILEVEL_HYPERGRAPH_CLUSTERING:
+      return metrics::quality(utils::cast<StaticPartitionedHypergraph>(partitioned_hg), Objective::km1);
     case NULLPTR_PARTITION: return 0;
   }
   return 0;
@@ -688,6 +705,8 @@ mt_kahypar_hyperedge_weight_t mt_kahypar_soed(const mt_kahypar_partitioned_hyper
       return metrics::quality(utils::cast<DynamicPartitionedHypergraph>(partitioned_hg), Objective::soed);
     case LARGE_K_PARTITIONING:
       return metrics::quality(utils::cast<SparsePartitionedHypergraph>(partitioned_hg), Objective::soed);
+    case MULTILEVEL_HYPERGRAPH_CLUSTERING:
+      return metrics::quality(utils::cast<StaticPartitionedHypergraph>(partitioned_hg), Objective::soed);
     case NULLPTR_PARTITION: return 0;
   }
   return 0;
@@ -728,6 +747,12 @@ mt_kahypar_hyperedge_weight_t mt_kahypar_steiner_tree(const mt_kahypar_partition
     case LARGE_K_PARTITIONING:
       {
         SparsePartitionedHypergraph& phg = utils::cast<SparsePartitionedHypergraph>(partitioned_hg);
+        phg.setTargetGraph(target);
+        return metrics::quality(phg, Objective::steiner_tree);
+      }
+    case MULTILEVEL_HYPERGRAPH_CLUSTERING:
+      {
+        StaticPartitionedHypergraph& phg = utils::cast<StaticPartitionedHypergraph>(partitioned_hg);
         phg.setTargetGraph(target);
         return metrics::quality(phg, Objective::steiner_tree);
       }

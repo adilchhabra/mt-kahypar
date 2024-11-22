@@ -16,6 +16,7 @@ target_compile_definitions(mtkahypar PUBLIC KAHYPAR_ENABLE_HIGHEST_QUALITY_FEATU
 target_compile_definitions(mtkahypar PUBLIC KAHYPAR_ENABLE_GRAPH_PARTITIONING_FEATURES)
 target_compile_definitions(mtkahypar PUBLIC KAHYPAR_ENABLE_SOED_METRIC)
 target_compile_definitions(mtkahypar PUBLIC KAHYPAR_ENABLE_STEINER_TREE_METRIC)
+target_compile_definitions(mtkahypar PUBLIC KAHYPAR_ENABLE_CLUSTERING_FEATURES)
 
 set(PARTITIONING_SUITE_TARGETS ${PARTITIONING_SUITE_TARGETS} mtkahypar PARENT_SCOPE)
 
