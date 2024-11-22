@@ -259,6 +259,11 @@ private:
     _hg = &hypergraph;
   }
 
+  // change k value after init
+  void setK(PartitionID k) {
+    _k = k;
+  }
+
   // ! Initial number of hypernodes
   HypernodeID initialNumNodes() const {
     return _hg->initialNumNodes();

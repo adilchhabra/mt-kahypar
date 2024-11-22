@@ -75,7 +75,7 @@ namespace {
   template<typename TypeTraits>
   typename TypeTraits::PartitionedHypergraph multilevel_partitioning(
     typename TypeTraits::Hypergraph& hypergraph,
-    const Context& context,
+    Context& context,
     const TargetGraph* target_graph,
     const bool is_vcycle) {
     using Hypergraph = typename TypeTraits::Hypergraph;
@@ -109,6 +109,18 @@ namespace {
     io::printInitialPartitioningBanner(context);
     timer.start_timer("initial_partitioning", "Initial Partitioning");
     PartitionedHypergraph& phg = uncoarseningData.coarsestPartitionedHypergraph();
+
+    if (context.partition.preset_type == PresetType::cluster) {
+      // for clustering IP, call singleton partitioner with k = no. hypernodes
+      // in the coarsest graph
+      context.partition.k = phg.initialNumNodes();
+      phg.setK(context.partition.k);
+      std::cout << "Set k to " << context.partition.k << std::endl;
+      context.sanityCheck(target_graph);
+      context.setupPartWeights(hypergraph.totalWeight());
+      context.setupContractionLimit(hypergraph.totalWeight());
+      context.setupThreadsPerFlowSearch();
+    }
 
     if ( !is_vcycle ) {
       DegreeZeroHypernodeRemover<TypeTraits> degree_zero_hn_remover(context);
@@ -207,7 +219,7 @@ namespace {
 
 template<typename TypeTraits>
 typename Multilevel<TypeTraits>::PartitionedHypergraph Multilevel<TypeTraits>::partition(
-  Hypergraph& hypergraph, const Context& context, const TargetGraph* target_graph) {
+  Hypergraph& hypergraph, Context& context, const TargetGraph* target_graph) {
   PartitionedHypergraph partitioned_hg =
     multilevel_partitioning<TypeTraits>(hypergraph, context, target_graph, false);
 
@@ -221,7 +233,7 @@ typename Multilevel<TypeTraits>::PartitionedHypergraph Multilevel<TypeTraits>::p
 
 template<typename TypeTraits>
 void Multilevel<TypeTraits>::partition(PartitionedHypergraph& partitioned_hg,
-                                       const Context& context,
+                                       Context& context,
                                        const TargetGraph* target_graph) {
   PartitionedHypergraph tmp_phg = partition(
     partitioned_hg.hypergraph(), context, target_graph);
@@ -234,7 +246,7 @@ void Multilevel<TypeTraits>::partition(PartitionedHypergraph& partitioned_hg,
 template<typename TypeTraits>
 void Multilevel<TypeTraits>::partitionVCycle(Hypergraph& hypergraph,
                                              PartitionedHypergraph& partitioned_hg,
-                                             const Context& context,
+                                             Context& context,
                                              const TargetGraph* target_graph) {
   ASSERT(context.partition.num_vcycles > 0);
 

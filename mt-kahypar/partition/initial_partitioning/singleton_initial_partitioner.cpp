@@ -34,35 +34,44 @@ namespace mt_kahypar {
 template<typename TypeTraits>
 void SingletonInitialPartitioner<TypeTraits>::partitionImpl() {
     // if num. nodes = k, assign each node to its own block
-    // otherwise produce same result as random IP
+    // otherwise produce same result as random IP (maybe change later)
   if ( _ip_data.should_initial_partitioner_run(InitialPartitioningAlgorithm::singleton) ) {
-    HighResClockTimepoint start = std::chrono::high_resolution_clock::now();
-    PartitionedHypergraph& hg = _ip_data.local_partitioned_hypergraph();
+      HighResClockTimepoint start = std::chrono::high_resolution_clock::now();
+      PartitionedHypergraph& hg = _ip_data.local_partitioned_hypergraph();
 
-    _ip_data.preassignFixedVertices(hg);
-    for ( const HypernodeID& hn : hg.nodes() ) {
-      if ( !hg.isFixed(hn) ) {
-        // Randomly select a block to assign the hypernode
-        PartitionID block = 0;
-        PartitionID current_block = block;
-        while ( !fitsIntoBlock(hg, hn, current_block) ) {
-          // If the hypernode does not fit into the random selected block
-          // (because it would violate the balance constraint), we try to
-          // assign it to the next block.
-          current_block = ( current_block + 1 ) % _context.partition.k;
-          if ( current_block == block ) {
-            // In case, we find no valid block to assign the current hypernode
-            // to, we assign it to random selected block
-            break;
+      if(hg.initialNumNodes() == static_cast<HypernodeID>(_context.partition.k)) {
+          for (const HypernodeID &hn: hg.nodes()) {
+              PartitionID singleton_block = static_cast<PartitionID>(hn); // adil: potential out of bounds
+              hg.setNodePart(hn, singleton_block);
           }
-        }
-        hg.setNodePart(hn, current_block);
-      }
-    }
+      } else {
+          std::uniform_int_distribution<PartitionID> select_random_block(0, _context.partition.k - 1);
 
-    HighResClockTimepoint end = std::chrono::high_resolution_clock::now();
-    double time = std::chrono::duration<double>(end - start).count();
-    _ip_data.commit(InitialPartitioningAlgorithm::singleton, _rng, _tag, time);
+          _ip_data.preassignFixedVertices(hg);
+          for (const HypernodeID &hn: hg.nodes()) {
+              if (!hg.isFixed(hn)) {
+                  // Randomly select a block to assign the hypernode
+                  PartitionID block = select_random_block(_rng);
+                  PartitionID current_block = block;
+                  while (!fitsIntoBlock(hg, hn, current_block)) {
+                      // If the hypernode does not fit into the random selected block
+                      // (because it would violate the balance constraint), we try to
+                      // assign it to the next block.
+                      current_block = (current_block + 1) % _context.partition.k;
+                      if (current_block == block) {
+                          // In case, we find no valid block to assign the current hypernode
+                          // to, we assign it to random selected block
+                          break;
+                      }
+                  }
+                  hg.setNodePart(hn, current_block);
+              }
+          }
+      }
+
+      HighResClockTimepoint end = std::chrono::high_resolution_clock::now();
+      double time = std::chrono::duration<double>(end - start).count();
+      _ip_data.commit(InitialPartitioningAlgorithm::singleton, _rng, _tag, time);
   }
 }
 

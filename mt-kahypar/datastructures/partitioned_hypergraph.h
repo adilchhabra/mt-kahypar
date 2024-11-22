@@ -174,6 +174,18 @@ class PartitionedHypergraph {
     _hg = &hypergraph;
   }
 
+  // change k value after init
+  void setK(PartitionID k) {
+      _k = k;
+      _part_weights.assign(k,CAtomic<HypernodeWeight>(0));
+      tbb::parallel_invoke([&] {
+      }, [&] {
+          _con_info.reset();
+          _con_info = ConnectivityInformation(
+                  _hg->initialNumEdges(), k, _hg->maxEdgeSize(), parallel_tag_t { });
+      });
+  }
+
   // ! Initial number of hypernodes
   HypernodeID initialNumNodes() const {
     return _hg->initialNumNodes();

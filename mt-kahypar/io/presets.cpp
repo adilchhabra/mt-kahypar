@@ -556,34 +556,34 @@ std::vector<option> load_clustering_preset() {
             "0",    // greedy_round_robin_fm
             "0",    // greedy_global_fm
             "0",    // greedy_sequential_fm
-            "1",    // random
+            "0",    // random
             "0",    // bfs
             "0",    // label_propagation
             "0",    // greedy_round_robin_max_net
             "0",    // greedy_global_max_net
             "0",    // greedy_sequential_max_net
-            "0",    // singleton
+            "1",    // singleton
     } },
-    create_option("i-use-adaptive-ip-runs", "true"),
-    create_option("i-min-adaptive-ip-runs", "3"),
-    create_option("i-perform-refinement-on-best-partitions", "true"),
-    create_option("i-fm-refinement-rounds", "1"),
-    create_option("i-lp-maximum-iterations", "20"),
-    create_option("i-lp-initial-block-size", "5"),
+    //create_option("i-use-adaptive-ip-runs", "false"),
+    //create_option("i-min-adaptive-ip-runs", "1"),
+    //create_option("i-perform-refinement-on-best-partitions", "false"),
+    //create_option("i-fm-refinement-rounds", "0"),
+    //create_option("i-lp-maximum-iterations", "0"),
+    //create_option("i-lp-initial-block-size", "0"),
     // main -> initial_partitioning -> refinement
     create_option("i-r-refine-until-no-improvement", "false"),
     // main -> initial_partitioning -> refinement -> label_propagation
-    create_option("i-r-lp-type", "label_propagation"),
-    create_option("i-r-lp-maximum-iterations", "5"),
-    create_option("i-r-lp-rebalancing", "true"),
-    create_option("i-r-lp-he-size-activation-threshold", "100"),
+    create_option("i-r-lp-type", "do_nothing"),
+    //create_option("i-r-lp-maximum-iterations", "0"),
+    //create_option("i-r-lp-rebalancing", "false"),
+    //create_option("i-r-lp-he-size-activation-threshold", "100"),
     // main -> initial_partitioning -> refinement -> fm
     create_option("i-r-fm-type", "do_nothing"),
     // main -> initial_partitioning -> refinement -> flows
     create_option("i-r-flow-algo", "do_nothing"),
     // main -> refinement
     create_option("r-rebalancer-type", "advanced_rebalancer"),
-    create_option("r-refine-until-no-improvement", "false"),
+    create_option("r-refine-until-no-improvement", "true"),
     // main -> refinement -> label_propagation
     create_option("r-lp-type", "label_propagation"),
     create_option("r-lp-unconstrained", "true"),
