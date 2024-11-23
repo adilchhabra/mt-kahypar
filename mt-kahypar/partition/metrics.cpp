@@ -168,7 +168,7 @@ HyperedgeWeight compute_objective_parallel(const PartitionedHypergraph& phg) {
             pi_mod += loyalty_rho - expected_edges;
         }
     });
-    std::cout << "Computed pi_mod: " << pi_mod / static_cast<double>(phg.initialNumEdges()) << std::endl;
+    std::cout << "Computed pi_mod = " << pi_mod / static_cast<double>(phg.initialNumEdges()) << std::endl;
   }
 
 

@@ -243,11 +243,15 @@ namespace mt_kahypar::io {
 
     const uint8_t part_digits = kahypar::math::digits(max_part_weight);
     const uint8_t k_digits = kahypar::math::digits(context.partition.k);
+    if(context.partition.preset_type == PresetType::cluster) {
+      std::cout << "Num. of Clusters = " << num_clusters << std::endl;
+    }
     if ( context.partition.k <= 32 ) {
       for (PartitionID i = 0; i != context.partition.k; ++i) {
         bool is_imbalanced =
-                hypergraph.partWeight(i) > context.partition.max_part_weights[i] ||
-                ( context.partition.preset_type != PresetType::large_k && hypergraph.partWeight(i) == 0 );
+                (hypergraph.partWeight(i) > context.partition.max_part_weights[i] ||
+                ( context.partition.preset_type != PresetType::large_k && hypergraph.partWeight(i) == 0 )) &&
+                (context.partition.preset_type != PresetType::cluster);
         if ( is_imbalanced ) std::cout << RED;
         std::cout << "|block " << std::left  << std::setw(k_digits) << i
                   << std::setw(1) << "| = "  << std::right << std::setw(part_digits) << part_sizes[i]
@@ -259,7 +263,6 @@ namespace mt_kahypar::io {
         if ( is_imbalanced ) std::cout << END;
       }
     } else {
-      std::cout << "Number of Clusters found: " << num_clusters << std::endl;
       std::cout << "Avg Block Weight = " << avg_part_weight << std::endl;
       std::cout << "Min Block Weight = " << min_part_weight
                 << (min_part_weight <= context.partition.max_part_weights[min_block] ? " <= " : " > ")
@@ -267,20 +270,21 @@ namespace mt_kahypar::io {
       std::cout << "Max Block Weight = " << max_part_weight
                 << (max_part_weight <= context.partition.max_part_weights[max_block] ? " <= " : " > ")
                 << context.partition.max_part_weights[max_block]  << " (Block " << max_block << ")" << std::endl;
-      if ( num_imbalanced_blocks > 0 ) {
+      if ( num_imbalanced_blocks > 0 && (context.partition.preset_type != PresetType::cluster)) {
         LOG << RED << "Number of Imbalanced Blocks =" << num_imbalanced_blocks << END;
         for (PartitionID i = 0; i != context.partition.k; ++i) {
           const bool is_imbalanced =
-            hypergraph.partWeight(i) > context.partition.max_part_weights[i] ||
-            ( context.partition.preset_type != PresetType::large_k && hypergraph.partWeight(i) == 0 );
+                  (hypergraph.partWeight(i) > context.partition.max_part_weights[i] ||
+            ( context.partition.preset_type != PresetType::large_k && hypergraph.partWeight(i) == 0)) &&
+                    (context.partition.preset_type != PresetType::cluster);
           if ( is_imbalanced ) {
-//            std::cout << RED << "|block " << std::left  << std::setw(k_digits) << i
-//                      << std::setw(1) << "| = "  << std::right << std::setw(part_digits) << part_sizes[i]
-//                      << std::setw(1) << "  w( "  << std::right << std::setw(k_digits) << i
-//                      << std::setw(1) << " ) = "  << std::right << std::setw(part_digits) << hypergraph.partWeight(i)
-//                      << std::setw(1) << "  max( " << std::right << std::setw(k_digits) << i
-//                      << std::setw(1) << " ) = "  << std::right << std::setw(part_digits) << context.partition.max_part_weights[i]
-//                      << END << std::endl;
+            std::cout << RED << "|block " << std::left  << std::setw(k_digits) << i
+                      << std::setw(1) << "| = "  << std::right << std::setw(part_digits) << part_sizes[i]
+                      << std::setw(1) << "  w( "  << std::right << std::setw(k_digits) << i
+                      << std::setw(1) << " ) = "  << std::right << std::setw(part_digits) << hypergraph.partWeight(i)
+                      << std::setw(1) << "  max( " << std::right << std::setw(k_digits) << i
+                      << std::setw(1) << " ) = "  << std::right << std::setw(part_digits) << context.partition.max_part_weights[i]
+                      << END << std::endl;
           }
         }
       }
