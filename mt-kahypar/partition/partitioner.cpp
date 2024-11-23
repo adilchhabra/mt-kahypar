@@ -59,8 +59,7 @@ namespace mt_kahypar {
         context.partition.k = 2; // adil set default k for clustering manually here
         // this determines how the part weights and contraction limits are defined
     }
-      LOG << "HG has num hyperedges = " << hypergraph.initialNumEdges();
-
+    
     context.partition.large_hyperedge_size_threshold = std::max(hypergraph.initialNumNodes() *
                                                                 context.partition.large_hyperedge_size_threshold_factor, 100.0);
     context.sanityCheck(target_graph);

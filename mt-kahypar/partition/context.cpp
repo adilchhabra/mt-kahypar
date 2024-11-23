@@ -302,7 +302,6 @@ namespace mt_kahypar {
                   total_hypergraph_weight
                   / static_cast<double>(partition.k)));
       }
-      std::cout << "Max weight: " << partition.perfect_balance_part_weights[0] << std::endl;
       for (PartitionID part = 1; part != partition.k; ++part) {
         partition.perfect_balance_part_weights.push_back(
                 partition.perfect_balance_part_weights[0]);
