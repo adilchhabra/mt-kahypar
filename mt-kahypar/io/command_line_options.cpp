@@ -782,7 +782,7 @@ namespace mt_kahypar {
              po::value<PartitionID>(&context.partition.k)->value_name("<int>"),
              "Number of blocks")
             ("epsilon,e",
-             po::value<double>(&context.partition.epsilon)->value_name("<double>")->required(),
+             po::value<double>(&context.partition.epsilon)->value_name("<double>"),
              "Imbalance parameter epsilon")
             ("objective,o",
              po::value<std::string>()->value_name("<string>")->required()->notifier([&](const std::string& s) {
@@ -845,6 +845,10 @@ namespace mt_kahypar {
     // Validate that blocks is specified if objective is not 'pimod'
     if (context.partition.objective != Objective::pimod && !cmd_vm.count("blocks")) {
       throw po::error("The --blocks option is required when the objective is not 'pimod'");
+    }
+
+    if (context.partition.objective != Objective::pimod && !cmd_vm.count("epsilon")) {
+      throw po::error("The --epsilon option is required when the objective is not 'pimod'");
     }
 
     po::options_description ini_line_options;

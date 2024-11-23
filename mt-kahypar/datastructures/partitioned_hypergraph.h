@@ -175,14 +175,14 @@ class PartitionedHypergraph {
   }
 
   // change k value after init
-  void setK(PartitionID k) {
+  void setK(PartitionID k, HyperedgeID init_num_hyperedges) {
       _k = k;
       _part_weights.assign(k,CAtomic<HypernodeWeight>(0));
       tbb::parallel_invoke([&] {
       }, [&] {
           _con_info.reset();
           _con_info = ConnectivityInformation(
-                  _hg->initialNumEdges(), k, _hg->maxEdgeSize(), parallel_tag_t { });
+                  init_num_hyperedges, k, _hg->maxEdgeSize(), parallel_tag_t { });
       });
   }
 

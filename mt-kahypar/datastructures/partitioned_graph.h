@@ -260,7 +260,7 @@ private:
   }
 
   // change k value after init
-  void setK(PartitionID k) {
+  void setK(PartitionID k, HyperedgeID init_num_hyperedges) {
     _k = k;
   }
 

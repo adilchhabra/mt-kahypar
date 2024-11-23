@@ -82,6 +82,8 @@ namespace {
     using PartitionedHypergraph = typename TypeTraits::PartitionedHypergraph;
     PartitionedHypergraph partitioned_hg;
 
+    HyperedgeID input_he_count = hypergraph.initialNumEdges();
+
     // ################## COARSENING ##################
     mt_kahypar::io::printCoarseningBanner(context);
 
@@ -114,8 +116,9 @@ namespace {
       // for clustering IP, call singleton partitioner with k = no. hypernodes
       // in the coarsest graph
       context.partition.k = phg.initialNumNodes();
-      phg.setK(context.partition.k);
+      phg.setK(context.partition.k, input_he_count);
       std::cout << "Set k to " << context.partition.k << std::endl;
+        LOG << "After set k, phg has num hyperedges = " << phg.initialNumEdges();
       context.sanityCheck(target_graph);
       context.setupPartWeights(hypergraph.totalWeight());
       context.setupContractionLimit(hypergraph.totalWeight());
