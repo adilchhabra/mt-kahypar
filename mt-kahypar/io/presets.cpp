@@ -587,10 +587,10 @@ std::vector<option> load_clustering_preset() {
     // main -> refinement -> label_propagation
     create_option("r-lp-type", "label_propagation"),
     create_option("r-lp-unconstrained", "true"),
-    create_option("r-lp-maximum-iterations", "5"),
+    create_option("r-lp-maximum-iterations", "20"),
     create_option("r-lp-rebalancing", "false"),
-    create_option("r-lp-he-size-activation-threshold", "100"),
-    create_option("r-lp-relative-improvement-threshold", "0.001"),
+    //create_option("r-lp-he-size-activation-threshold", "100"),
+    //create_option("r-lp-relative-improvement-threshold", "0.001"),
     // main -> refinement -> fm
     create_option("r-fm-type", "unconstrained_fm"),
     create_option("r-fm-multitry-rounds", "10"),

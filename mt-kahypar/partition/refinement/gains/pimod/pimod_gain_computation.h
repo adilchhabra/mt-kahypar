@@ -71,6 +71,7 @@ class PiModGainComputation : public GainComputationBase<PiModGainComputation, Pi
     // iterate over all incident edges of hn to compute change in support of incident hyperedges
     // if the hypernode is moved to the corresponding cluster
     for (const HyperedgeID& he : phg.incidentEdges(hn)) {
+        LOG << "For he " << he <<":";
         // map to store cluster ID as key and fraction of pins in that cluster as loyalty value
         std::unordered_map<PartitionID, double> per_cluster_loyalty;
 
@@ -80,8 +81,11 @@ class PiModGainComputation : public GainComputationBase<PiModGainComputation, Pi
         // go over all pins of the hyperedge and populate the map with loyalties for each incident cluster
         PartitionID clusterID = 0;
         for (const HypernodeID &pin: phg.pins(he)) {
-            clusterID = phg.partID(pin);
-            per_cluster_loyalty[clusterID] += 1.0 / totalPins;
+            if(pin != hn) {
+                clusterID = phg.partID(pin);
+                LOG << "Pin " << pin << " in cluster " << clusterID;
+                per_cluster_loyalty[clusterID] += 1.0 / totalPins;
+            }
         }
 
         // loyalty of hyperedge if hn is in its own cluster
@@ -103,11 +107,14 @@ class PiModGainComputation : public GainComputationBase<PiModGainComputation, Pi
             double l_3_rho = l_3 / std::log2((1.0 / l_3) + 1.0);
 
             delta_supt[clusterID] += (l_3_rho - l_1_rho - l_2_rho);
+            LOG << "Delta supt for " << clusterID << " is now " << delta_supt[clusterID];
         }
     }
 
     // compute pi modularity change if the hypernode is removed from its current cluster
     double change_in_pi_modularity_u_from_C = deltaPIRemove(phg, from, delta_supt[from]);
+
+    //constexpr Gain max_Gain = std::numeric_limits<Gain>::max();
 
     for (const auto& pair : delta_supt) {
       PartitionID clusterID = pair.first;
@@ -116,6 +123,13 @@ class PiModGainComputation : public GainComputationBase<PiModGainComputation, Pi
       double net_change_in_pi_modularity = change_in_pi_modularity_u_to_C + change_in_pi_modularity_u_from_C;
       //std::cout << deltaPI(phg, clusterID, delta_supt_C) << std::endl;
       tmp_scores[clusterID] =  (net_change_in_pi_modularity * 100000000000);
+      LOG << "Cluster " << clusterID << " has pi_mod gain " << net_change_in_pi_modularity;
+      //if (net_change_in_pi_modularity < -1.0 || net_change_in_pi_modularity > 1.0) {
+      //  throw std::out_of_range("Value must be in the range [-1, 1]");
+      //}
+      // shift net_change_in_pi_modularity by 1.0 to make all values in the range [0,2]
+      // map doubles in [0,2] to [0, 2^{32}-1] for unsigned int 32-bit ints
+      //tmp_scores[clusterID] = static_cast<Gain>(std::round((net_change_in_pi_modularity+1.0) * (max_Gain/2.0)));
     }
     isolated_block_gain = 0;
 

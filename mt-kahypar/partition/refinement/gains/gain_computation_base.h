@@ -89,13 +89,13 @@ class GainComputationBase {
         return false;
       }
     };
-    //std::cout << "Computing gain for node " << hn << " from block " << from << std::endl;
+    LOG << "Computing gain for node " << hn << " from block " << from;
 
     for ( const auto& entry : tmp_scores ) {
       const PartitionID to = entry.key;
       if (from != to) {
         const Gain score = derived->gain(entry.value, isolated_block_gain);
-        //std::cout << "Block: " << to << " -> " << score << std::endl;
+          LOG << "Block: " << to << " -> " << score;
         test_and_apply(to, score);
       }
     }

@@ -49,8 +49,9 @@ namespace mt_kahypar {
     ASSERT(hn != kInvalidHypernode);
     if ( hypergraph.isBorderNode(hn) && !hypergraph.isFixed(hn) ) {
       ASSERT(hypergraph.nodeIsEnabled(hn));
-
+      LOG << "Node " << hn;
       Move best_move = _gain.computeMaxGainMove(hypergraph, hn, false, false, unconstrained);
+      LOG << "Node " << hn << " from block " << best_move.from << " to block " << best_move.to;
       // We perform a move if it either improves the solution quality or, in case of a
       // zero gain move, the balance of the solution.
       const bool positive_gain = best_move.gain < 0;
