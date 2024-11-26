@@ -211,7 +211,7 @@ class PartitionedHypergraph {
     return _hg->initialNumEdges();
   }
 
-  // ! Number of nodes of the input hypergraph
+  // ! Number of edges of the input hypergraph
   HyperedgeID topLevelNumEdges() const {
     return _input_num_edges;
   }
@@ -614,10 +614,17 @@ class PartitionedHypergraph {
       SynchronizedEdgeUpdate sync_update;
       sync_update.from = from;
       sync_update.to = to;
+      sync_update.hn = u;
+      sync_update.hn_degree = du;
+      sync_update.hn_weight = wu;
+      sync_update.vol_H = initialTotalVertexDegree();
+      sync_update.m = topLevelNumEdges();
+      sync_update.vol_To = _part_volumes[to];
+      sync_update.vol_From = _part_volumes[from];
       sync_update.target_graph = _target_graph;
       sync_update.edge_locks = &_pin_count_update_ownership;
       for ( const HyperedgeID he : incidentEdges(u) ) {
-        updatePinCountOfHyperedge(he, from, to, sync_update, delta_func, notify_func);
+        updatePinCountOfHyperedge(he, u, from, to, sync_update, delta_func, notify_func);
       }
       return true;
     } else {
@@ -1221,6 +1228,7 @@ class PartitionedHypergraph {
 
   // ! Updates pin count in part using a spinlock.
   MT_KAHYPAR_ATTRIBUTE_ALWAYS_INLINE void updatePinCountOfHyperedge(const HyperedgeID he,
+                                                                    const HypernodeID  u,
                                                                     const PartitionID from,
                                                                     const PartitionID to,
                                                                     SynchronizedEdgeUpdate& sync_update,
@@ -1236,6 +1244,7 @@ class PartitionedHypergraph {
     sync_update.pin_count_in_to_part_after = incrementPinCountOfBlock(he, to);
     sync_update.connectivity_set_after = hasTargetGraph() ? &deepCopyOfConnectivitySet(he) : nullptr;
     sync_update.pin_counts_after = hasTargetGraph() ? &_con_info.pinCountSnapshot(he) : nullptr;
+    computeEdgeLoyaltyToPart(he,u,from,to,sync_update);
     _pin_count_update_ownership[he].unlock();
     delta_func(sync_update);
   }
@@ -1262,6 +1271,30 @@ class PartitionedHypergraph {
       _con_info.addBlock(e, p);
     }
     return pin_count_after;
+  }
+
+  MT_KAHYPAR_ATTRIBUTE_ALWAYS_INLINE
+  void computeEdgeLoyaltyToPart(const HyperedgeID e, const HypernodeID  u, const PartitionID from, const PartitionID to, SynchronizedEdgeUpdate& sync_update) {
+    ASSERT(e < _hg->initialNumEdges(), "Hyperedge" << e << "does not exist");
+    ASSERT(edgeIsEnabled(e), "Hyperedge" << e << "is disabled");
+    ASSERT(from != kInvalidPartition && from < _k);
+    ASSERT(to != kInvalidPartition && to < _k);
+    double loyalty_To = 0;
+    double loyalty_From = 0;
+    HypernodeWeight computed_edge_weight = 0;
+    for ( const HypernodeID& pin : pins(e) ) {
+      if(pin != u) {
+          if (partID(pin) == to) {
+              loyalty_To += nodeWeight(pin);
+          } else if (partID(pin) == from) {
+              loyalty_From += nodeWeight(pin);
+          }
+      }
+      computed_edge_weight += nodeWeight(pin);
+    }
+    sync_update.loyalty_towards_from_part = loyalty_From;
+    sync_update.loyalty_towards_to_part = loyalty_To;
+    sync_update.edge_weight_from_nodes = computed_edge_weight;
   }
 
 

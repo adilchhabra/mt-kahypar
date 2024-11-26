@@ -85,7 +85,7 @@ struct ObjectiveFunction<PartitionedHypergraph, Objective::pimod> {
         // get total number of pins of the hyperedge
         //HypernodeID totalPins = phg.edgeSize(he);
         auto vol_H = static_cast<double>(phg.initialTotalVertexDegree());
-        auto m = static_cast<double>(phg.initialNumEdges());
+        auto m = static_cast<double>(phg.topLevelNumEdges());
         HypernodeWeight totalEdgeWeight = 0;
 
         // Calculate gamma
@@ -142,7 +142,7 @@ HyperedgeWeight compute_objective_parallel(const PartitionedHypergraph& phg) {
         // get total number of pins of the hyperedge
         //HypernodeID totalPins = phg.edgeSize(he);
         auto vol_H = static_cast<double>(phg.initialTotalVertexDegree());
-        auto m = static_cast<double>(phg.initialNumEdges());
+        auto m = static_cast<double>(phg.topLevelNumEdges());
         HypernodeWeight totalEdgeWeight = 0;
 
         // Calculate gamma

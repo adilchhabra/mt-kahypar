@@ -74,12 +74,13 @@ namespace mt_kahypar {
           // In case the move to block 'to' was successful, we verify that the "real" gain
           // of the move is either equal to our computed gain or if not, still improves
           // the solution quality.
-          if(_context.partition.preset_type == PresetType::cluster) { //adil: temp
-              _gain.setLocalDelta(best_move.gain);
-          }
+          LOG << "After move gain = " << _gain.localDelta() << " and computed best gain = " << best_move.gain;
+          //if(_context.partition.preset_type == PresetType::cluster) { //adil: temp
+          //    _gain.setLocalDelta(best_move.gain);
+          //}
           Gain move_delta = _gain.localDelta() - delta_before;
           //LOG << "Move Delta: " << move_delta;
-          bool accept_move = (move_delta == best_move.gain || move_delta <= 0 || _context.partition.preset_type == PresetType::cluster); // adil: temp
+          bool accept_move = (move_delta == best_move.gain || move_delta <= 0);
           if (accept_move) {
             //LOG << "Accepted.";
             if constexpr (!unconstrained) {

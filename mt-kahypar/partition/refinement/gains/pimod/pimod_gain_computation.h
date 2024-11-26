@@ -72,7 +72,7 @@ class PiModGainComputation : public GainComputationBase<PiModGainComputation, Pi
     // iterate over all incident edges of hn to compute change in support of incident hyperedges
     // if the hypernode is moved to the corresponding cluster
     for (const HyperedgeID& he : phg.incidentEdges(hn)) {
-        //LOG << "For he " << he <<":";
+        //LOG << "For hn " << hn << " and for he " << he <<":";
         // map to store cluster ID as key and fraction of pins in that cluster as loyalty value
         std::unordered_map<PartitionID, double> per_cluster_loyalty;
         HypernodeWeight totalEdgeWeight = 0;
@@ -89,8 +89,8 @@ class PiModGainComputation : public GainComputationBase<PiModGainComputation, Pi
                 //per_cluster_loyalty[clusterID] += static_cast<double>(phg.nodeWeight(pin)) / totalPins;
                 //per_cluster_loyalty[clusterID] += 1.0 / totalPins;
                 per_cluster_loyalty[clusterID] += static_cast<double>(phg.nodeWeight(pin));
-                totalEdgeWeight += phg.nodeWeight(pin);
             }
+            totalEdgeWeight += phg.nodeWeight(pin);
         }
 
         // loyalty of hyperedge if hn is in its own cluster
@@ -122,13 +122,15 @@ class PiModGainComputation : public GainComputationBase<PiModGainComputation, Pi
             }
 
             delta_supt[clusterID] += (l_3_rho - l_1_rho - l_2_rho);
+            //LOG << "For node: " << hn << " and edge " << he;
             //LOG << "For cluster " << clusterID << " l1 = " << l_1 << " : l2 = " << l_2 << " : l3 = " << l_3;
-            //LOG << "Delta supt for " << clusterID << " is now " << delta_supt[clusterID];
+            //LOG << "Delta supt for " << clusterID << " is " << l_3_rho - l_1_rho - l_2_rho;
         }
     }
 
     // compute pi modularity change if the hypernode is removed from its current cluster
     double change_in_pi_modularity_u_from_C = deltaPIRemove(phg, hn, from, delta_supt[from]);
+    //LOG << "Out of cluster " << from << " has pi_mod change " << change_in_pi_modularity_u_from_C;
 
     //constexpr Gain max_Gain = std::numeric_limits<Gain>::max();
 
@@ -137,8 +139,8 @@ class PiModGainComputation : public GainComputationBase<PiModGainComputation, Pi
       if (clusterID != phg.partID(hn)) {
       double delta_supt_C = pair.second;
       double change_in_pi_modularity_u_to_C = deltaPI(phg, hn, clusterID, delta_supt_C);
+      //LOG << "Insert to cluster " << clusterID << " has pi_mod change " << change_in_pi_modularity_u_to_C;
       double net_change_in_pi_modularity = change_in_pi_modularity_u_to_C + change_in_pi_modularity_u_from_C;
-      //std::cout << deltaPI(phg, clusterID, delta_supt_C) << std::endl;
       tmp_scores[clusterID] =  (net_change_in_pi_modularity * 100000);
       //LOG << "Cluster " << clusterID << " has pi_mod gain " << net_change_in_pi_modularity;
       //if (net_change_in_pi_modularity < -1.0 || net_change_in_pi_modularity > 1.0) {
@@ -170,7 +172,7 @@ class PiModGainComputation : public GainComputationBase<PiModGainComputation, Pi
       // this function returns the change in modularity on moving hn to new_cluster
 
       auto vol_H = static_cast<double>(phg.initialTotalVertexDegree());
-      auto m = static_cast<double>(phg.initialNumEdges());
+      auto m = static_cast<double>(phg.topLevelNumEdges());
 
       // Calculate gamma
       const double gamma = (vol_H - 2 * m) / (vol_H - m);
@@ -183,7 +185,7 @@ class PiModGainComputation : public GainComputationBase<PiModGainComputation, Pi
       //LOG << "vol_C = " << vol_C << " and eta_C = " << eta_C;
 
       // volume of cluster containing only hn
-      double vol_hn = static_cast<double>(phg.nodeDegree(hn));
+      auto vol_hn = static_cast<double>(phg.nodeDegree(hn));
       double eta_hn = theta * (1.0 - (vol_hn / vol_H));
 
       //LOG << "vol_hn = " << vol_hn << " and eta_hn = " << eta_hn;
@@ -208,7 +210,7 @@ class PiModGainComputation : public GainComputationBase<PiModGainComputation, Pi
         // this function returns the change in modularity on moving hn to new_cluster
 
         auto vol_H = static_cast<double>(phg.initialTotalVertexDegree());
-        auto m = static_cast<double>(phg.initialNumEdges());
+        auto m = static_cast<double>(phg.topLevelNumEdges());
 
         // Calculate gamma
         const double gamma = (vol_H - 2 * m) / (vol_H - m);
@@ -219,7 +221,7 @@ class PiModGainComputation : public GainComputationBase<PiModGainComputation, Pi
         double eta_C = theta * (1.0 - (vol_C / vol_H));
 
         // volume of cluster containing only hn
-        double vol_hn = static_cast<double>(phg.nodeDegree(hn));
+        auto vol_hn = static_cast<double>(phg.nodeDegree(hn));
         double eta_hn = theta * (1.0 - (vol_hn / vol_H));
 
         // volume of old_cluster without hn

@@ -57,7 +57,7 @@ using HypernodeID = uint32_t;
 using HyperedgeID = uint32_t;
 #endif
 using HypernodeWeight = int32_t;
-using HyperedgeWeight = int64_t;
+using HyperedgeWeight = int32_t;
 using PartitionID = int32_t;
 using Gain = HyperedgeWeight;
 
@@ -152,6 +152,16 @@ struct SynchronizedEdgeUpdate {
   mutable ds::PinCountSnapshot* pin_counts_after = nullptr;
   const TargetGraph* target_graph = nullptr;
   ds::Array<SpinLock>* edge_locks = nullptr;
+  HypernodeID hn = kInvalidHypernode;
+  HypernodeID vol_H = kInvalidHypernode;
+  HyperedgeID m = kInvalidHyperedge;
+  HyperedgeID hn_degree = kInvalidHyperedge;
+  HypernodeWeight hn_weight = kInvalidPartition;
+  HypernodeWeight edge_weight_from_nodes = kInvalidPartition;
+  double loyalty_towards_to_part = 0;
+  double loyalty_towards_from_part = 0;
+  HypernodeID vol_To = kInvalidHypernode;
+  HypernodeID vol_From = kInvalidHypernode;
 };
 
 struct NoOpDeltaFunc {
