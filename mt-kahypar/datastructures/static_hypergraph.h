@@ -490,7 +490,7 @@ class StaticHypergraph {
     return _num_removed_hypernodes;
   }
 
-  // ! Weight of removed degree zero vertics
+  // ! Weight of removed degree zero vertices
   HypernodeWeight weightOfRemovedDegreeZeroVertices() const {
     return _removed_degree_zero_hn_weight;
   }

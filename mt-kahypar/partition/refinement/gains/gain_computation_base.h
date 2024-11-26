@@ -89,13 +89,12 @@ class GainComputationBase {
         return false;
       }
     };
-    LOG << "Computing gain for node " << hn << " from block " << from;
 
     for ( const auto& entry : tmp_scores ) {
       const PartitionID to = entry.key;
       if (from != to) {
         const Gain score = derived->gain(entry.value, isolated_block_gain);
-          LOG << "Block: " << to << " -> " << score;
+        //LOG << "Block: " << to << " -> " << score;
         test_and_apply(to, score);
       }
     }
@@ -134,6 +133,10 @@ class GainComputationBase {
   // ! reset()
   Gain localDelta() {
     return _deltas.local();
+  }
+
+  void setLocalDelta(Gain moveGain) {
+      _deltas.local() = moveGain;
   }
 
   // ! Returns the overall delta of all moves performed by
