@@ -14,6 +14,43 @@ def read_clusters_from_file(file_path):
         print(f"Error reading file {file_path}: {e}")
         sys.exit(1)
 
+def mutual_information(Z, Z_hat, normalized=False):
+    """
+    Compute the mutual information between two clusterings (Z and Z_hat).
+    Optionally normalize to calculate NMI.
+    """
+    n = len(Z)
+
+    # Joint probabilities
+    p_XY = Counter((Z[i], Z_hat[i]) for i in range(n))
+    for key in p_XY:
+        p_XY[key] /= n
+
+    # Marginal probabilities
+    p_X = Counter(Z)  # Marginal for Z
+    for key in p_X:
+        p_X[key] /= n
+
+    p_Y = Counter(Z_hat)  # Marginal for Z_hat
+    for key in p_Y:
+        p_Y[key] /= n
+
+    # Mutual Information
+    I = 0
+    for (x, y), p_xy in p_XY.items():
+        try:
+            I += p_xy * np.log(p_xy / (p_X[x] * p_Y[y]))
+        except (ValueError, KeyError):
+            pass  # Handle log(0) or missing keys gracefully
+
+    if normalized:
+        # Compute entropies
+        H_X = -sum(p * np.log(p) for p in p_X.values())
+        H_Y = -sum(p * np.log(p) for p in p_Y.values())
+        return 2 * I / (H_X + H_Y) if (H_X + H_Y) > 0 else 0
+
+    return I
+
 def compute_purity(predicted_clusters, ground_truth_clusters):
     """
     Compute purity for clustering.
@@ -66,7 +103,9 @@ def compute_clustering_metrics(predicted_clusters, ground_truth_clusters):
     metrics = {
         "AMI": adjusted_mutual_info_score(ground_truth_clusters, predicted_clusters),
         "ARI": adjusted_rand_score(ground_truth_clusters, predicted_clusters),
-        "NMI": normalized_mutual_info_score(ground_truth_clusters, predicted_clusters),
+        "NMI (sklearn)": normalized_mutual_info_score(ground_truth_clusters, predicted_clusters),
+        "NMI (custom)": mutual_information(ground_truth_clusters, predicted_clusters, normalized=True),
+        "Mutual Information (custom)": mutual_information(ground_truth_clusters, predicted_clusters),
         "Homogeneity": homogeneity_score(ground_truth_clusters, predicted_clusters),
         "Completeness": completeness_score(ground_truth_clusters, predicted_clusters),
         "V-Measure": v_measure_score(ground_truth_clusters, predicted_clusters),

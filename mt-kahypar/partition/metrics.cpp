@@ -89,7 +89,7 @@ struct ObjectiveFunction<PartitionedHypergraph, Objective::pimod> {
         //HypernodeID totalPins = phg.edgeSize(he);
         auto vol_H = static_cast<double>(phg.topLevelTotalVertexDegree());
         auto m = static_cast<double>(phg.topLevelNumEdges());
-        double theta = 0.5;
+        double theta = 0.3;
         HypernodeWeight totalEdgeWeight = 0;
 
         // Calculate gamma
@@ -133,9 +133,7 @@ struct ObjectiveFunction<PartitionedHypergraph, Objective::pimod> {
              }
          }
          auto final = static_cast<HyperedgeWeight>(std::floor(pi_mod_contribution * 100000));
-        //pi_mod_contribution = pi_mod_contribution / m;
-        //std::cout << "Total Contribution: " << pi_mod_contribution << std::endl;
-        //std::cout << "----------" << std::endl;
+
         return -1 * final;
     }
 };

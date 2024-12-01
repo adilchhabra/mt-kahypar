@@ -67,7 +67,7 @@ class PiModGainComputation : public GainComputationBase<PiModGainComputation, Pi
     // map to store incident cluster IDs and the gain in pi modularity associated
     // with them
     std::unordered_map<PartitionID, double> delta_supt;
-    double theta = 0.5;
+    double theta = 0.3;
     //LOG << "For node " << hn;
 
     // iterate over all incident edges of hn to compute change in support of incident hyperedges
@@ -93,33 +93,26 @@ class PiModGainComputation : public GainComputationBase<PiModGainComputation, Pi
             }
             totalEdgeWeight += phg.nodeWeight(pin);
         }
+//        if(num_pins_in_from == 1 && phg.edgeSize(he) == 1) {
+//            LOG << "Self";
+//        }
 
         // loyalty of hyperedge if hn is in its own cluster
         double l_1 = static_cast<double>(phg.nodeWeight(hn)) / totalEdgeWeight;
-        //double l_1 = 1.0 / totalPins;
-        double l_1_rho = 0;
-        if(l_1 >= theta) {
-            l_1_rho = l_1 / std::log2((1.0 / l_1) + 1.0);
-        }
+        double l_1_rho = compute_loyalty_rho(l_1, theta);
 
         for (const auto &pair: per_cluster_loyalty) {
             clusterID = pair.first;
 
             // loyalty of hyperedge if hn is kept in its current cluster
             double l_2 = pair.second / totalEdgeWeight;
-            double l_2_rho = 0;
-            if (l_2 >= theta) {
-                l_2_rho = l_2 / std::log2((1.0 / l_2) + 1.0);
-            }
+            double l_2_rho = compute_loyalty_rho(l_2, theta);
 
             // Process the partition ID and loyalty value
 
             // loyalty of hyperedge if hn is sent to current clusterID
             double l_3 = l_1 + l_2;
-            double l_3_rho = 0;
-            if(l_3 >= theta) {
-                l_3_rho = l_3 / std::log2((1.0 / l_3) + 1.0);
-            }
+            double l_3_rho = compute_loyalty_rho(l_3, theta);
 
             delta_supt[clusterID] += (l_3_rho - l_1_rho - l_2_rho);
         }
@@ -174,7 +167,7 @@ class PiModGainComputation : public GainComputationBase<PiModGainComputation, Pi
 
       // Calculate gamma
       const double gamma = (vol_H - 2 * m) / (vol_H - m);
-      double theta = 0.5;
+      double theta = 0.3;
 
       // volume of new_cluster
       auto vol_C = static_cast<double>(phg.partVolume(new_cluster));
@@ -210,7 +203,7 @@ class PiModGainComputation : public GainComputationBase<PiModGainComputation, Pi
 
         // Calculate gamma
         const double gamma = (vol_H - 2 * m) / (vol_H - m);
-        double theta = 0.5;
+        double theta = 0.3;
 
         // volume of old_cluster
         auto vol_C = static_cast<double>(phg.partVolume(old_cluster));
@@ -240,6 +233,13 @@ class PiModGainComputation : public GainComputationBase<PiModGainComputation, Pi
         // return expected edges in cluster according to Random Hypergraph Expansion Model
         double exp_value = (1.0-gamma) * (std::pow(1.0 - eta, 2)/(1.0 - gamma + (gamma * eta)));
         return exp_value;
+    }
+
+    static double compute_loyalty_rho(double loyalty, double threshold) {
+        if (loyalty >= threshold) {
+            return loyalty / std::log2((1.0 / loyalty) + 1.0);
+        }
+        return 0.0;
     }
 
 };

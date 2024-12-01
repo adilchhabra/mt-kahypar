@@ -31,6 +31,19 @@
 namespace mt_kahypar {
 
 /**
+ * Utility function to compute loyalty (rho).
+ * @param loyalty Loyalty value
+ * @param threshold Threshold for applying the rho function
+ * @return Computed rho value
+ */
+inline double compute_loyalty_rho(double loyalty, double threshold) {
+    if (loyalty >= threshold) {
+        return loyalty / std::log2((1.0 / loyalty) + 1.0);
+    }
+    return 0.0;
+}
+
+/**
  * After moving a node, we perform a synchronized update of the pin count values
  * for each incident hyperedge of the node based on which we then compute an
  * attributed gain value.
@@ -50,7 +63,7 @@ struct PiModAttributedGains {
 
         // Calculate gamma
         const double gamma = (vol_H - 2 * m) / (vol_H - m);
-        double theta = 0.5;
+        double theta = 0.3;
 
         // volume of old_cluster (if hn in it)
         auto vol_C = static_cast<double>(sync_update.vol_From + sync_update.hn_degree);
@@ -78,7 +91,7 @@ struct PiModAttributedGains {
 
         // Calculate gamma
         const double gamma = (vol_H - 2 * m) / (vol_H - m);
-        double theta = 0.5;
+        double theta = 0.3;
 
         // volume of new_cluster
         auto vol_C = static_cast<double>(sync_update.vol_To - sync_update.hn_degree);
@@ -106,48 +119,28 @@ struct PiModAttributedGains {
 
     static HyperedgeWeight gain(const SynchronizedEdgeUpdate& sync_update) {
       // here, we receive volumes of To and From, and loyalty to To and From with hn already in To
-      double theta = 0.5;
+      double theta = 0.3;
       //LOG << "For he = " << sync_update.he;
 
       // loyalty of hyperedge if hn is in its own cluster
       double l_1 = static_cast<double>(sync_update.hn_weight) / static_cast<double>(sync_update.edge_weight_from_nodes);
-      //LOG << "Attributed l1: " << l_1;
-      double l_1_rho = 0;
-      if(l_1 >= theta) {
-          l_1_rho = l_1 / std::log2((1.0 / l_1) + 1.0);
-      }
+      double l_1_rho = compute_loyalty_rho(l_1, theta);
 
       // compute loyalty of he to From cluster (does not include hn_weight)
       double l_2_From = static_cast<double>(sync_update.loyalty_towards_from_part) / static_cast<double>(sync_update.edge_weight_from_nodes);
-      //LOG << "Attributed l2From: " << l_2;
-      double l_2_From_rho = 0;
-      if (l_2_From >= theta) {
-          l_2_From_rho = l_2_From / std::log2((1.0 / l_2_From) + 1.0);
-      }
+      double l_2_From_rho = compute_loyalty_rho(l_2_From, theta);
 
       // compute loyalty if hn is not in To yet
       double l_2_To = static_cast<double>(sync_update.loyalty_towards_to_part) / static_cast<double>(sync_update.edge_weight_from_nodes);
-      //LOG << "Attributed l2To: " << l_2;
-      double l_2_To_rho = 0;
-      if (l_2_To >= theta) {
-          l_2_To_rho = l_2_To / std::log2((1.0 / l_2_To) + 1.0);
-      }
+      double l_2_To_rho = compute_loyalty_rho(l_2_To, theta);
 
       // compute loyalty if hn is in From
       double l_3_From = static_cast<double>(sync_update.loyalty_towards_from_part + sync_update.hn_weight) / static_cast<double>(sync_update.edge_weight_from_nodes);
-      //LOG << "Attributed l3From: " << l_3;
-      double l_3_From_rho = 0;
-      if(l_3_From >= theta) {
-          l_3_From_rho = l_3_From / std::log2((1.0 / l_3_From) + 1.0);
-      }
+      double l_3_From_rho = compute_loyalty_rho(l_3_From, theta);
 
       // compute loyalty if hn is in To
       double l_3_To = static_cast<double>(sync_update.loyalty_towards_to_part + sync_update.hn_weight) / static_cast<double>(sync_update.edge_weight_from_nodes);
-      //LOG << "Attributed l3To: " << l_3;
-      double l_3_To_rho = 0;
-      if(l_3_To >= theta) {
-          l_3_To_rho = l_3_To / std::log2((1.0 / l_3_To) + 1.0);
-      }
+      double l_3_To_rho = compute_loyalty_rho(l_3_To, theta);
 
       double delta_supt_to_From_of_he = (l_3_From_rho - l_1_rho - l_2_From_rho);
       double delta_supt_to_C_of_he = (l_3_To_rho - l_1_rho - l_2_To_rho);
