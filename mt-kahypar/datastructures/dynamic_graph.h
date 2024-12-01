@@ -639,6 +639,11 @@ class DynamicGraph {
     });
   }
 
+  void setClusteringMode(const bool to_set) {
+    throw NonSupportedOperationException(
+            "setClusteringMode is not supported in dynamic graph");
+  }
+
   // ####################### Fixed Vertex Support #######################
 
   void addFixedVertexSupport(FixedVertexSupport<DynamicGraph>&& fixed_vertices) {

@@ -843,6 +843,11 @@ class StaticGraph {
     });
   }
 
+  void setClusteringMode(const bool to_set) {
+     throw NonSupportedOperationException(
+       "setClusteringMode is not supported in static graph");
+  }
+
   void setCommunityIDs(ds::Clustering&& communities) {
     ASSERT(communities.size() == initialNumNodes());
     _community_ids = std::move(communities);

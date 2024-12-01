@@ -180,9 +180,9 @@ namespace mt_kahypar::ds {
                   tmp_incidence_array.begin() + incidence_array_start, first_invalid_entry_it);
           tmp_hyperedges[he].setSize(contracted_size);
 
+          if ( contracted_size > 1 || (contracted_size == 1 && _clustering_mode)) { //adil: todo fix for cluster
 
-          if ( contracted_size > 1 ) {
-            // Compute hash of contracted hyperedge
+              // Compute hash of contracted hyperedge
             size_t footprint = kEdgeHashSeed;
             for ( size_t pos = incidence_array_start; pos < incidence_array_start + contracted_size; ++pos ) {
               footprint += cs2(tmp_incidence_array[pos]);

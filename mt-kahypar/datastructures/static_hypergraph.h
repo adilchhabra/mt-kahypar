@@ -422,6 +422,7 @@ class StaticHypergraph {
     _incidence_array(),
     _community_ids(0),
     _fixed_vertices(),
+    _clustering_mode(false),
     _tmp_contraction_buffer(nullptr) { }
 
   StaticHypergraph(const StaticHypergraph&) = delete;
@@ -443,6 +444,7 @@ class StaticHypergraph {
     _incidence_array(std::move(other._incidence_array)),
     _community_ids(std::move(other._community_ids)),
     _fixed_vertices(std::move(other._fixed_vertices)),
+    _clustering_mode(other._clustering_mode),
     _tmp_contraction_buffer(std::move(other._tmp_contraction_buffer)) {
     _fixed_vertices.setHypergraph(this);
     other._tmp_contraction_buffer = nullptr;
@@ -465,6 +467,7 @@ class StaticHypergraph {
     _community_ids = std::move(other._community_ids);
     _fixed_vertices = std::move(other._fixed_vertices);
     _fixed_vertices.setHypergraph(this);
+    _clustering_mode = other._clustering_mode;
     _tmp_contraction_buffer = std::move(other._tmp_contraction_buffer);
     other._tmp_contraction_buffer = nullptr;
     return *this;
@@ -841,6 +844,11 @@ class StaticHypergraph {
     });
   }
 
+  // ! Reset internal community information
+  void setClusteringMode(const bool to_set) {
+    _clustering_mode = to_set;
+  }
+
   void setCommunityIDs(ds::Clustering&& communities) {
     ASSERT(communities.size() == initialNumNodes());
     _community_ids = std::move(communities);
@@ -1006,6 +1014,9 @@ class StaticHypergraph {
 
   // ! Fixed Vertex Support
   FixedVertexSupport<StaticHypergraph> _fixed_vertices;
+
+  // ! Communities
+  bool _clustering_mode;
 
   // ! Data that is reused throughout the multilevel hierarchy
   // ! to contract the hypergraph and to prevent expensive allocations

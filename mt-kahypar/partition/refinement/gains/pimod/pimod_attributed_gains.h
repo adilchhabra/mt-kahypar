@@ -64,8 +64,8 @@ struct PiModAttributedGains {
         auto vol_C_without_hn = static_cast<double>(sync_update.vol_From);
         double eta_C_without_hn = theta * (1.0 - (vol_C_without_hn / vol_H));
 
-        double change_in_expected_edges = (delta_supt_C / m) + ((expected_edges_in_cluster(gamma, eta_C_without_hn) +
-                                          expected_edges_in_cluster(gamma, eta_hn) - expected_edges_in_cluster(gamma, eta_C))/sync_update.hn_degree);
+        double change_in_expected_edges = (delta_supt_C / m) + ((expected_edges_in_cluster(gamma, eta_C) +
+                                          expected_edges_in_cluster(gamma, eta_hn) - expected_edges_in_cluster(gamma, eta_C_without_hn))/sync_update.hn_degree);
 
         return -1 * change_in_expected_edges;
     }
@@ -105,19 +105,7 @@ struct PiModAttributedGains {
     }
 
     static HyperedgeWeight gain(const SynchronizedEdgeUpdate& sync_update) {
-      //adil: todo
       // here, we receive volumes of To and From, and loyalty to To and From with hn already in To
-      // thus, gain computation differs
-      //LOG << "Node: " << sync_update.hn;
-      //LOG << "Deg: " << sync_update.hn_degree;
-      //LOG << "Node Weight: " << sync_update.hn_weight;
-      //LOG << "vol_H: " << sync_update.vol_H;
-      //LOG << "m: " << sync_update.m;
-      //LOG << "vol_To: " << sync_update.vol_To;
-      //LOG << "loyalty to To: " << sync_update.loyalty_towards_to_part;
-      //LOG << "vol_From: " << sync_update.vol_To;
-      //LOG << "loyalty to From: " << sync_update.loyalty_towards_to_part;
-      //LOG << "Total Edge Weight: " << sync_update.edge_weight_from_nodes;
       double theta = 0.5;
       //LOG << "For he = " << sync_update.he;
 
@@ -129,7 +117,7 @@ struct PiModAttributedGains {
           l_1_rho = l_1 / std::log2((1.0 / l_1) + 1.0);
       }
 
-      // compute loyalty if hn is in From
+      // compute loyalty of he to From cluster (does not include hn_weight)
       double l_2_From = static_cast<double>(sync_update.loyalty_towards_from_part) / static_cast<double>(sync_update.edge_weight_from_nodes);
       //LOG << "Attributed l2From: " << l_2;
       double l_2_From_rho = 0;
@@ -163,20 +151,20 @@ struct PiModAttributedGains {
 
       double delta_supt_to_From_of_he = (l_3_From_rho - l_1_rho - l_2_From_rho);
       double delta_supt_to_C_of_he = (l_3_To_rho - l_1_rho - l_2_To_rho);
-      //LOG << "Att: For node " << sync_update.hn << " and edge " << sync_update.he << " delta supt to " << sync_update.from <<  " = " << delta_supt_to_From_of_he;
-      //LOG << "Att: For node " << sync_update.hn << " and edge " << sync_update.he << " delta supt to " << sync_update.to <<  " = " << delta_supt_to_C_of_he;
 
       // compute pi modularity change if the hypernode is removed from its cluster
-      double change_in_pi_modularity_u_from_From = deltaPIRemove(delta_supt_to_From_of_he, sync_update);
+      double change_in_pi_modularity_u_from_From = 0;
+      if(sync_update.hn_degree != (sync_update.vol_From+sync_update.hn_degree)) {
+          change_in_pi_modularity_u_from_From = deltaPIRemove(delta_supt_to_From_of_he, sync_update);
+      }
       double change_in_pi_modularity_u_to_To = deltaPI(delta_supt_to_C_of_he, sync_update);
-      //LOG << "Att: Out of cluster " << sync_update.from << " has pi_mod change " << change_in_pi_modularity_u_from_From;
-      //LOG << "Att: Insert to cluster " << sync_update.to << " has pi_mod change " << change_in_pi_modularity_u_to_To;
 
       double change_in_pi_modularity = change_in_pi_modularity_u_to_To + change_in_pi_modularity_u_from_From;
-
-      //LOG << "Att: Computed attributed gain from he " << sync_update.he << "= " << change_in_pi_modularity;
-
-      return -1.0 * (change_in_pi_modularity * 100000);
+//      LOG << "ATT: Node "<< sync_update.hn << " to cluster " << sync_update.to << " has pi_mod gain " <<
+//      change_in_pi_modularity << " with from = " << change_in_pi_modularity_u_from_From <<
+//      " and to = " << change_in_pi_modularity_u_to_To;
+      auto final = static_cast<HyperedgeWeight>(std::floor(change_in_pi_modularity * 100000));
+      return -1 * final;
   }
 };
 

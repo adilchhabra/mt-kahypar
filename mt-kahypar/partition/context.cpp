@@ -326,6 +326,8 @@ namespace mt_kahypar {
       coarsening.contraction_limit =
         std::max(2 * shared_memory.num_threads, static_cast<size_t>(partition.k)) *
           coarsening.contraction_limit_multiplier;
+    //} else if (partition.preset_type == PresetType::cluster){
+    //    coarsening.contraction_limit = 1600;
     } else {
       coarsening.contraction_limit =
               coarsening.contraction_limit_multiplier * partition.k;

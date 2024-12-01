@@ -104,6 +104,7 @@ class PartitionedHypergraph {
                                  Hypergraph& hypergraph) :
     _input_num_nodes(hypergraph.initialNumNodes()),
     _input_num_edges(hypergraph.initialNumEdges()),
+    _input_total_vertex_degree(hypergraph.initialTotalVertexDegree()),
     _k(k),
     _hg(&hypergraph),
     _target_graph(nullptr),
@@ -122,6 +123,7 @@ class PartitionedHypergraph {
                                  parallel_tag_t) :
     _input_num_nodes(hypergraph.initialNumNodes()),
     _input_num_edges(hypergraph.initialNumEdges()),
+    _input_total_vertex_degree(hypergraph.initialTotalVertexDegree()),
     _k(k),
     _hg(&hypergraph),
     _target_graph(nullptr),
@@ -229,6 +231,11 @@ class PartitionedHypergraph {
   // ! Initial sum of the degree of all vertices
   HypernodeID initialTotalVertexDegree() const {
     return _hg->initialTotalVertexDegree();
+  }
+
+  // ! Initial sum of the degree of all vertices
+  HypernodeID topLevelTotalVertexDegree() const {
+    return _input_total_vertex_degree;
   }
 
   // ! Total weight of hypergraph
@@ -617,7 +624,7 @@ class PartitionedHypergraph {
       sync_update.hn = u;
       sync_update.hn_degree = du;
       sync_update.hn_weight = wu;
-      sync_update.vol_H = initialTotalVertexDegree();
+      sync_update.vol_H = topLevelTotalVertexDegree();
       sync_update.m = topLevelNumEdges();
       sync_update.vol_To = _part_volumes[to];
       sync_update.vol_From = _part_volumes[from];
@@ -626,6 +633,7 @@ class PartitionedHypergraph {
       for ( const HyperedgeID he : incidentEdges(u) ) {
         updatePinCountOfHyperedge(he, u, from, to, sync_update, delta_func, notify_func);
       }
+      //LOG << "Node " << u << " is moved from " << from << " to " << to;
       return true;
     } else {
       _part_weights[to].fetch_sub(wu, std::memory_order_relaxed);
@@ -1303,6 +1311,9 @@ class PartitionedHypergraph {
 
   // ! Number of hyperedges of the top level hypergraph
   HyperedgeID _input_num_edges = 0;
+
+  // ! Volume of the top level hypergraph
+  HyperedgeID _input_total_vertex_degree = 0;
 
   // ! Number of blocks
   PartitionID _k = 0;

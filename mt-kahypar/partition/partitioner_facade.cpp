@@ -50,6 +50,10 @@ namespace internal {
     using PartitionedHypergraph = typename TypeTraits::PartitionedHypergraph;
     Hypergraph& hg = utils::cast<Hypergraph>(hypergraph);
 
+    if(context.partition.preset_type == PresetType::cluster) {
+        hg.setClusteringMode(true);
+    }
+
     // Partition Hypergraph
     PartitionedHypergraph partitioned_hg =
       Partitioner<TypeTraits>::partition(hg, context, target_graph);

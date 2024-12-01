@@ -395,13 +395,6 @@ namespace mt_kahypar {
     }
     #endif
 
-    //partitioned_hypergraph.setNodePart(0,0);
-    //partitioned_hypergraph.setNodePart(1,0);
-    //partitioned_hypergraph.setNodePart(3,0);
-    //partitioned_hypergraph.setNodePart(2,1);
-    //partitioned_hypergraph.setNodePart(4,1);
-    //partitioned_hypergraph.setNodePart(5,1);
-    //partitioned_hypergraph.setNodePart(6,1);
 
     if (context.partition.verbose_output) {
       io::printHypergraphInfo(partitioned_hypergraph.hypergraph(), context,

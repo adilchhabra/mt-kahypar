@@ -49,8 +49,8 @@ namespace mt_kahypar {
     ASSERT(hn != kInvalidHypernode);
     if ( hypergraph.isBorderNode(hn) && !hypergraph.isFixed(hn) ) {
       ASSERT(hypergraph.nodeIsEnabled(hn));
-      //LOG << "Node " << hn;
       Move best_move = _gain.computeMaxGainMove(hypergraph, hn, false, false, unconstrained);
+      //LOG << "Computed best_move for node " << hn;
       // We perform a move if it either improves the solution quality or, in case of a
       // zero gain move, the balance of the solution.
       const bool positive_gain = best_move.gain < 0;
@@ -61,28 +61,36 @@ namespace mt_kahypar {
                                     hypergraph.partWeight(best_move.to) <
                                     _context.partition.perfect_balance_part_weights[best_move.to]);
       const bool perform_move = positive_gain || zero_gain_move;
+
       if (best_move.from != best_move.to && perform_move) {
         PartitionID from = best_move.from;
         PartitionID to = best_move.to;
         //LOG << "Moving node " << hn << " from block " << best_move.from << " to block " << best_move.to;
         Gain delta_before = _gain.localDelta();
+        //HyperedgeWeight old_pi_mod = metrics::quality(hypergraph, _context);
         //LOG << "Delta before: " << delta_before;
         bool changed_part = changeNodePart<unconstrained>(hypergraph, hn, from, to, objective_delta);
+//          if(_context.partition.preset_type == PresetType::cluster) { //adil: temp
+//              _gain.setLocalDelta(best_move.gain);
+//          }
         ASSERT(!unconstrained || changed_part);
         is_moved = true;
         if (unconstrained || changed_part) {
           // In case the move to block 'to' was successful, we verify that the "real" gain
           // of the move is either equal to our computed gain or if not, still improves
           // the solution quality.
-          LOG << "After move gain = " << _gain.localDelta() << " and computed best gain = " << best_move.gain;
-          //if(_context.partition.preset_type == PresetType::cluster) { //adil: temp
-          //    _gain.setLocalDelta(best_move.gain);
-          //}
+
+
           Gain move_delta = _gain.localDelta() - delta_before;
-          //LOG << "Move Delta: " << move_delta;
+          //if (std::abs(move_delta - best_move.gain) > 20) {
+          //    LOG << "After move gain = " << _gain.localDelta() << " and computed best gain = " << best_move.gain
+          //        << " and move_delta = " << move_delta;
+          //}
           bool accept_move = (move_delta == best_move.gain || move_delta <= 0);
           if (accept_move) {
             //LOG << "Accepted.";
+              //HyperedgeWeight new_pi_mod = metrics::quality(hypergraph, _context);
+              //LOG << "Moving " << hn << " to " << best_move.to << " gives gain " << best_move.gain << " or att = " << move_delta << " and changes pi_mod from " << old_pi_mod << " to " << new_pi_mod << " which gives delta = " << std::abs(new_pi_mod - old_pi_mod);
             if constexpr (!unconstrained) {
               // in unconstrained case, we don't want to activate neighbors if the move is undone
               // by the rebalancing
@@ -169,6 +177,8 @@ namespace mt_kahypar {
     if (unconstrained_lp) {
       _old_partition_is_balanced = metrics::isBalanced(hypergraph, _context);
       moveActiveNodes<true>(hypergraph, next_active_nodes);
+      // here we can recompute the score
+      LOG << "After changes quality recomputed: " << metrics::quality(hypergraph,_context);
     } else {
       moveActiveNodes<false>(hypergraph, next_active_nodes);
     }
@@ -217,9 +227,9 @@ namespace mt_kahypar {
     best_metrics = current_metrics;
 
     HEAVY_REFINEMENT_ASSERT(hypergraph.checkTrackedPartitionInformation(_gain_cache));
-    LOG << "Old Quality: " << old_quality << " and Current Quality: " << current_metrics.quality << " and diff: " << old_quality - current_metrics.quality;
+    LOG << "Old Quality: " << old_quality << " and Current Quality: " << current_metrics.quality << " and diff: " << std::abs(old_quality - current_metrics.quality);
     LOG << "Threshold " << _context.refinement.label_propagation.relative_improvement_threshold << " and cap: " << _context.refinement.label_propagation.relative_improvement_threshold * old_quality;
-    return should_stop || old_quality - current_metrics.quality <
+    return should_stop || std::abs(old_quality - current_metrics.quality) <
                           _context.refinement.label_propagation.relative_improvement_threshold * old_quality;
   }
 
@@ -289,12 +299,13 @@ namespace mt_kahypar {
     bool was_imbalanced_and_improved_balance = !_old_partition_is_balanced
                                                && current_metrics.imbalance < best_metrics.imbalance;
     // We consider the new partition an improvement if either
-    // (1) the old partiton was imbalanced and balance is improved or
+    // (1) the old partition was imbalanced and balance is improved or
     // (2) the quality is improved while still being balanced
     if ( was_imbalanced_and_improved_balance
          || (current_metrics.quality <= best_metrics.quality && metrics::isBalanced(hypergraph, _context)) ) {
       return false;
     } else {
+        LOG << "Rollback in rebalancing";
       // rollback and stop LP
       auto noop_obj_fn = [](const SynchronizedEdgeUpdate&) { };
       current_metrics = best_metrics;

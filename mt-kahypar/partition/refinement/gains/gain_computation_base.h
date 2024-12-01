@@ -136,7 +136,7 @@ class GainComputationBase {
   }
 
   void setLocalDelta(Gain moveGain) {
-      _deltas.local() = moveGain;
+      _deltas.local() += moveGain;
   }
 
   // ! Returns the overall delta of all moves performed by

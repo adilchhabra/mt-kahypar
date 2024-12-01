@@ -733,6 +733,12 @@ class DynamicHypergraph {
     return hypernode(u).setCommunityID(community_id);
   }
 
+  void setClusteringMode(const bool to_set) {
+    throw NonSupportedOperationException(
+            "setClusteringMode is not supported in dynamic hypergraph");
+  }
+
+
   // ####################### Fixed Vertex Support #######################
 
   void addFixedVertexSupport(FixedVertexSupport<DynamicHypergraph>&& fixed_vertices) {

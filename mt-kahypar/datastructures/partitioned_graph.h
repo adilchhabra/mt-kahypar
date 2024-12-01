@@ -176,6 +176,7 @@ private:
     _input_num_nodes(hypergraph.initialNumNodes()),
     _input_num_edges(hypergraph.initialNumEdges()),
     _input_unique_ids(hypergraph.maxUniqueID()),
+    _input_total_vertex_degree(hypergraph.initialTotalVertexDegree()),
     _k(k),
     _hg(&hypergraph),
     _target_graph(nullptr),
@@ -200,6 +201,7 @@ private:
     _input_num_nodes(hypergraph.initialNumNodes()),
     _input_num_edges(hypergraph.initialNumEdges()),
     _input_unique_ids(hypergraph.maxUniqueID()),
+    _input_total_vertex_degree(hypergraph.initialTotalVertexDegree()),
     _k(k),
     _hg(&hypergraph),
     _target_graph(nullptr),
@@ -306,6 +308,11 @@ private:
   // ! Initial sum of the degree of all vertices
   HypernodeID initialTotalVertexDegree() const {
     return _hg->initialTotalVertexDegree();
+  }
+
+  // ! Initial sum of the degree of all vertices
+  HypernodeID topLevelTotalVertexDegree() const {
+    return _input_total_vertex_degree;
   }
 
   // ! Total weight of hypergraph
@@ -1184,6 +1191,9 @@ private:
   HyperedgeID _input_num_edges = 0;
 
   HyperedgeID _input_unique_ids = 0;
+
+  // ! Volume of the top level hypergraph
+  HyperedgeID _input_total_vertex_degree = 0;
 
   // ! Number of blocks
   PartitionID _k = 0;

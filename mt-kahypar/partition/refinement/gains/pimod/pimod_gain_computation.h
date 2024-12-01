@@ -68,6 +68,7 @@ class PiModGainComputation : public GainComputationBase<PiModGainComputation, Pi
     // with them
     std::unordered_map<PartitionID, double> delta_supt;
     double theta = 0.5;
+    //LOG << "For node " << hn;
 
     // iterate over all incident edges of hn to compute change in support of incident hyperedges
     // if the hypernode is moved to the corresponding cluster
@@ -82,13 +83,13 @@ class PiModGainComputation : public GainComputationBase<PiModGainComputation, Pi
 
         // go over all pins of the hyperedge and populate the map with loyalties for each incident cluster
         PartitionID clusterID = 0;
+        //HypernodeID num_pins_in_from = 1;
         for (const HypernodeID &pin: phg.pins(he)) {
             if(pin != hn) {
                 clusterID = phg.partID(pin);
                 //LOG << "Pin " << pin << " in cluster " << clusterID << " with weight = " << phg.nodeWeight(pin);
-                //per_cluster_loyalty[clusterID] += static_cast<double>(phg.nodeWeight(pin)) / totalPins;
-                //per_cluster_loyalty[clusterID] += 1.0 / totalPins;
                 per_cluster_loyalty[clusterID] += static_cast<double>(phg.nodeWeight(pin));
+                //if(clusterID == from) num_pins_in_from++;
             }
             totalEdgeWeight += phg.nodeWeight(pin);
         }
@@ -112,7 +113,6 @@ class PiModGainComputation : public GainComputationBase<PiModGainComputation, Pi
             }
 
             // Process the partition ID and loyalty value
-            //std::cout << "Partition ID: " << clusterID << ", Loyalty: " << l_2 << std::endl;
 
             // loyalty of hyperedge if hn is sent to current clusterID
             double l_3 = l_1 + l_2;
@@ -122,15 +122,16 @@ class PiModGainComputation : public GainComputationBase<PiModGainComputation, Pi
             }
 
             delta_supt[clusterID] += (l_3_rho - l_1_rho - l_2_rho);
-            //LOG << "For node: " << hn << " and edge " << he;
-            //LOG << "For cluster " << clusterID << " l1 = " << l_1 << " : l2 = " << l_2 << " : l3 = " << l_3;
-            //LOG << "Delta supt for " << clusterID << " is " << l_3_rho - l_1_rho - l_2_rho;
         }
     }
 
     // compute pi modularity change if the hypernode is removed from its current cluster
-    double change_in_pi_modularity_u_from_C = deltaPIRemove(phg, hn, from, delta_supt[from]);
-    //LOG << "Out of cluster " << from << " has pi_mod change " << change_in_pi_modularity_u_from_C;
+    double change_in_pi_modularity_u_from_C = 0;
+
+    // if hn is the only node in the cluster, removing it does not change pi mod score
+    if(phg.partWeight(from) != phg.nodeWeight(hn)) {
+        change_in_pi_modularity_u_from_C = deltaPIRemove(phg, hn, from, delta_supt[from]);
+    }
 
     //constexpr Gain max_Gain = std::numeric_limits<Gain>::max();
 
@@ -139,18 +140,15 @@ class PiModGainComputation : public GainComputationBase<PiModGainComputation, Pi
       if (clusterID != phg.partID(hn)) {
       double delta_supt_C = pair.second;
       double change_in_pi_modularity_u_to_C = deltaPI(phg, hn, clusterID, delta_supt_C);
-      //LOG << "Insert to cluster " << clusterID << " has pi_mod change " << change_in_pi_modularity_u_to_C;
       double net_change_in_pi_modularity = change_in_pi_modularity_u_to_C + change_in_pi_modularity_u_from_C;
-      tmp_scores[clusterID] =  (net_change_in_pi_modularity * 100000);
-      //LOG << "Cluster " << clusterID << " has pi_mod gain " << net_change_in_pi_modularity;
-      //if (net_change_in_pi_modularity < -1.0 || net_change_in_pi_modularity > 1.0) {
-      //  throw std::out_of_range("Value must be in the range [-1, 1]");
-      //}
-      // shift net_change_in_pi_modularity by 1.0 to make all values in the range [0,2]
-      // map doubles in [0,2] to [0, 2^{32}-1] for unsigned int 32-bit ints
-      //tmp_scores[clusterID] = static_cast<Gain>(std::round((net_change_in_pi_modularity+1.0) * (max_Gain/2.0)));
+
+      tmp_scores[clusterID] = static_cast<HyperedgeWeight>(std::floor(net_change_in_pi_modularity * 100000));
+      //LOG << "Node "<< hn << " to cluster " << clusterID << " has pi_mod gain " << net_change_in_pi_modularity
+      //            << " with from = " << change_in_pi_modularity_u_from_C <<
+      //            " and to = " << change_in_pi_modularity_u_to_C;;
       }
     }
+    //LOG << "---------";
     isolated_block_gain = 0;
 
   }
@@ -170,8 +168,8 @@ class PiModGainComputation : public GainComputationBase<PiModGainComputation, Pi
                  PartitionID new_cluster,
                  double delta_supt_C) {
       // this function returns the change in modularity on moving hn to new_cluster
-
-      auto vol_H = static_cast<double>(phg.initialTotalVertexDegree());
+      //LOG << "Computing deltaPI for node " << hn << " to cluster " << new_cluster;
+      auto vol_H = static_cast<double>(phg.topLevelTotalVertexDegree());
       auto m = static_cast<double>(phg.topLevelNumEdges());
 
       // Calculate gamma
@@ -194,8 +192,6 @@ class PiModGainComputation : public GainComputationBase<PiModGainComputation, Pi
       double vol_C_with_hn = vol_C + vol_hn;
       double eta_C_with_hn = theta * (1.0 - (vol_C_with_hn / vol_H));
 
-      //LOG << "vol_C_with_hn = " << vol_C_with_hn << " and eta_C_with_hn = " << eta_C_with_hn;
-
       double change_in_expected_edges = (delta_supt_C / m) + expected_edges_in_cluster(gamma, eta_C) +
               expected_edges_in_cluster(gamma, eta_hn) - expected_edges_in_cluster(gamma, eta_C_with_hn);
 
@@ -208,8 +204,8 @@ class PiModGainComputation : public GainComputationBase<PiModGainComputation, Pi
                    PartitionID old_cluster,
                    double delta_supt_C) {
         // this function returns the change in modularity on moving hn to new_cluster
-
-        auto vol_H = static_cast<double>(phg.initialTotalVertexDegree());
+        //LOG << "Computing deltaPI for node " << hn << " out from cluster " << old_cluster;
+        auto vol_H = static_cast<double>(phg.topLevelTotalVertexDegree());
         auto m = static_cast<double>(phg.topLevelNumEdges());
 
         // Calculate gamma
@@ -228,8 +224,14 @@ class PiModGainComputation : public GainComputationBase<PiModGainComputation, Pi
         double vol_C_without_hn = vol_C - vol_hn;
         double eta_C_without_hn = theta * (1.0 - (vol_C_without_hn / vol_H));
 
-        double change_in_expected_edges = (delta_supt_C / m) + expected_edges_in_cluster(gamma, eta_C_without_hn) +
-                                          expected_edges_in_cluster(gamma, eta_hn) - expected_edges_in_cluster(gamma, eta_C);
+        //double change_in_expected_edges = (delta_supt_C / m) + expected_edges_in_cluster(gamma, eta_C_without_hn) +
+        //                                  expected_edges_in_cluster(gamma, eta_hn) - expected_edges_in_cluster(gamma, eta_C);
+        //LOG << "delta supt = " << delta_supt_C;
+        //LOG << "exp_C = " << expected_edges_in_cluster(gamma,eta_C);
+        //LOG << "exp_hn = " << expected_edges_in_cluster(gamma,eta_hn);
+        //LOG << "exp_C_without_hn = " << expected_edges_in_cluster(gamma, eta_C_without_hn);
+        double change_in_expected_edges = (delta_supt_C / m) + expected_edges_in_cluster(gamma, eta_C) +
+                                          expected_edges_in_cluster(gamma, eta_hn) - expected_edges_in_cluster(gamma, eta_C_without_hn);
 
         return -1 * change_in_expected_edges;
     }

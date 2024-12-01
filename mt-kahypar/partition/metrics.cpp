@@ -80,16 +80,21 @@ struct ObjectiveFunction<PartitionedHypergraph, Objective::pimod> {
         double pi_mod_contribution = 0;
 
         // map to store cluster ID as key and fraction of pins in that cluster as loyalty value
-        std::unordered_map<PartitionID, double> per_cluster_loyalty;
+        //std::unordered_map<PartitionID, double> per_cluster_loyalty;
+        // vector of size = num. clusters
+        //adil: todo potentially change for mem consumption
+        std::vector <double> per_cluster_loyalty(phg.k(),0);
 
         // get total number of pins of the hyperedge
         //HypernodeID totalPins = phg.edgeSize(he);
-        auto vol_H = static_cast<double>(phg.initialTotalVertexDegree());
+        auto vol_H = static_cast<double>(phg.topLevelTotalVertexDegree());
         auto m = static_cast<double>(phg.topLevelNumEdges());
+        double theta = 0.5;
         HypernodeWeight totalEdgeWeight = 0;
 
         // Calculate gamma
         double gamma = (vol_H - 2 * m) / (vol_H - m);
+        //bool found_node = false;
 
         // go over all pins of the hyperedge and populate the map with loyalties for each incident cluster
         for (const HypernodeID& pin : phg.pins(he)) {
@@ -100,28 +105,38 @@ struct ObjectiveFunction<PartitionedHypergraph, Objective::pimod> {
             totalEdgeWeight += phg.nodeWeight(pin);
         }
 
-        for ( auto& [clusterID, loyalty] : per_cluster_loyalty) {
-            double theta = 0.5;
-            loyalty = loyalty / totalEdgeWeight;
-            // Apply function rho to loyalty -> set to linear-over-log as suggested by authors
-            double loyalty_rho = 0;
-            if (loyalty >= theta) {
-                loyalty_rho = loyalty / std::log2((1.0 / loyalty) + 1.0);
-            }
+         for (size_t cluster = 0; cluster < per_cluster_loyalty.size(); cluster++) {
+             if(phg.partWeight(cluster) != 0) { // check if cluster is non-empty, i.e., it exists
+                 // Calculate eta for the current cluster C
+                auto vol_C = static_cast<double>(phg.partVolume(cluster));
+                double eta = theta * (1.0 - (vol_C / vol_H));
+                 // Calculate expected edges in cluster according to Random Hypergraph Expansion Model
+                 //double expected_edges = (std::pow(1.0 - eta, 2) * std::pow((1.0 + ((gamma * eta) / (1.0 - gamma))),-1))/m;
+                 double expected_edges = (std::pow((1.0 - eta), 2) * ((1.0 - gamma) / (1.0 - gamma + (gamma * eta))));
 
-            // Calculate eta for the current cluster C
-            auto vol_C = static_cast<double>(phg.partVolume(clusterID));
-            double eta = theta * (1.0 - (vol_C / vol_H));
+                 if (per_cluster_loyalty[cluster] == 0) {
+                     // only remove exp edges to cluster / m from pi mod score
+                     //if(found_node && cluster == 63) {
+                         //LOG << "Metrics: Pi_mod contribution = " << -1 * (expected_edges/m);
+                     //}
+                     pi_mod_contribution -= (expected_edges/m);
+                 } else if (per_cluster_loyalty[cluster] > 0) {
+                     double loyalty_C = per_cluster_loyalty[cluster] / totalEdgeWeight;
+                     // Apply function rho to loyalty -> set to linear-over-log as suggested by authors
+                     double loyalty_rho = 0;
+                     if (loyalty_C >= theta) {
+                        loyalty_rho = loyalty_C / std::log2((1.0 / loyalty_C) + 1.0);
+                     }
 
-            // Calculate expected edges in cluster according to Random Hypergraph Expansion Model
-            double expected_edges = std::pow(1.0 - eta, 2) * std::pow((1.0 + ((gamma * eta) / (1.0 - gamma))),-1);
-
-            pi_mod_contribution += loyalty_rho - expected_edges;
-        }
-        pi_mod_contribution = pi_mod_contribution / m;
+                     pi_mod_contribution += ((loyalty_rho - expected_edges)/m);
+                 }
+             }
+         }
+         auto final = static_cast<HyperedgeWeight>(std::floor(pi_mod_contribution * 100000));
+        //pi_mod_contribution = pi_mod_contribution / m;
         //std::cout << "Total Contribution: " << pi_mod_contribution << std::endl;
         //std::cout << "----------" << std::endl;
-        return -1 * (pi_mod_contribution* 100000);
+        return -1 * final;
     }
 };
 
@@ -134,54 +149,98 @@ HyperedgeWeight compute_objective_parallel(const PartitionedHypergraph& phg) {
 
   });
 
-  if constexpr (objective == Objective::pimod) {
-    double pi_mod = 0;
-    phg.doParallelForAllEdges([&](const HyperedgeID he) {
-        // map to store cluster ID as key and fraction of pins in that cluster as loyalty value
-        std::unordered_map<PartitionID, double> per_cluster_loyalty;
-        // get total number of pins of the hyperedge
-        //HypernodeID totalPins = phg.edgeSize(he);
-        auto vol_H = static_cast<double>(phg.initialTotalVertexDegree());
-        auto m = static_cast<double>(phg.topLevelNumEdges());
-        HypernodeWeight totalEdgeWeight = 0;
-
-        // Calculate gamma
-        double gamma = (vol_H - 2 * m) / (vol_H - m);
-
-        // go over all pins of the hyperedge and populate the map with loyalties for each incident cluster
-        for (const HypernodeID& pin : phg.pins(he)) {
-            PartitionID clusterID = phg.partID(pin);
-            //per_cluster_loyalty[clusterID] += static_cast<double>(phg.nodeWeight(pin)) / totalPins;
-            //per_cluster_loyalty[clusterID] += 1.0 / totalPins;
-            per_cluster_loyalty[clusterID] += static_cast<double>(phg.nodeWeight(pin));
-            totalEdgeWeight += phg.nodeWeight(pin);
-        }
-
-        //std::cout << "Loyalty for edge " << he << std::endl;
-        for (auto& [clusterID, loyalty] : per_cluster_loyalty) {
-
-            double theta = 0.5;
-            loyalty = loyalty / totalEdgeWeight;
-
-            // Apply function rho to loyalty -> set to linear-over-log as suggested by authors
-            double loyalty_rho = 0;
-            if (loyalty >= theta) {
-                loyalty_rho = loyalty / std::log2((1.0 / loyalty) + 1.0);
-            }
-
-            // Calculate eta for the current cluster C
-            auto vol_C = static_cast<double>(phg.partVolume(clusterID));
-            double eta = theta * (1.0 - (vol_C / vol_H));
-
-            // Calculate expected edges in cluster according to Random Hypergraph Expansion Model
-            double expected_edges = std::pow(1.0 - eta, 2) * std::pow((1.0 + ((gamma * eta) / (1.0 - gamma))),-1);
-            //std::cout << "Cluster: " << clusterID << ", Loyalty: " << loyalty << ", Volume: " << phg.partWeight(clusterID) << ", Rho: " << loyalty_rho  << ", Eta: " << eta<< std::endl;
-
-            pi_mod += loyalty_rho - expected_edges;
-        }
-    });
-    LOG << "Computed pi_mod = " << pi_mod / static_cast<double>(phg.initialNumEdges());
-  }
+//  if constexpr (objective == Objective::pimod) {
+//    double pi_mod = 0;
+//    phg.doParallelForAllEdges([&](const HyperedgeID he) {
+//        // map to store cluster ID as key and fraction of pins in that cluster as loyalty value
+//        //std::unordered_map<PartitionID, double> per_cluster_loyalty;
+//        // vector of size = num. clusters
+//        //adil: todo potentially change for mem consumption
+//        std::vector <double> per_cluster_loyalty(phg.k(),0);
+//
+//        // get total number of pins of the hyperedge
+//        //HypernodeID totalPins = phg.edgeSize(he);
+//        auto vol_H = static_cast<double>(phg.topLevelTotalVertexDegree());
+//        auto m = static_cast<double>(phg.topLevelNumEdges());
+//        double theta = 0.5;
+//        HypernodeWeight totalEdgeWeight = 0;
+//
+//        // Calculate gamma
+//        double gamma = (vol_H - 2 * m) / (vol_H - m);
+//        //LOG << "vol_H = " << vol_H << " and m = " << m << " so gamma = " << gamma;
+//        //std::cout << "Examining he " << he << " with pins: ";
+//
+//        // go over all pins of the hyperedge and populate the map with loyalties for each incident cluster
+//        for (const HypernodeID& pin : phg.pins(he)) {
+//            PartitionID clusterID = phg.partID(pin);
+//            //std::cout << pin << ", ";
+//            //per_cluster_loyalty[clusterID] += static_cast<double>(phg.nodeWeight(pin)) / totalPins;
+//            //per_cluster_loyalty[clusterID] += 1.0 / totalPins;
+//            per_cluster_loyalty[clusterID] += static_cast<double>(phg.nodeWeight(pin));
+//            totalEdgeWeight += phg.nodeWeight(pin);
+//        }
+//        //std::cout << std::endl;
+//
+//        //std::cout << "Loyalty for edge " << he << std::endl;
+////        for (auto& [clusterID, loyalty] : per_cluster_loyalty) {
+////
+////            double theta = 0.5;
+////            loyalty = loyalty / totalEdgeWeight;
+////
+////            // Apply function rho to loyalty -> set to linear-over-log as suggested by authors
+////            double loyalty_rho = 0;
+////            if (loyalty >= theta) {
+////                loyalty_rho = loyalty / std::log2((1.0 / loyalty) + 1.0);
+////            }
+////
+////            // Calculate eta for the current cluster C
+////            auto vol_C = static_cast<double>(phg.partVolume(clusterID));
+////            double eta = theta * (1.0 - (vol_C / vol_H));
+////
+////            // Calculate expected edges in cluster according to Random Hypergraph Expansion Model
+////            double expected_edges = std::pow(1.0 - eta, 2) * std::pow((1.0 + ((gamma * eta) / (1.0 - gamma))),-1);
+////            //std::cout << "Cluster: " << clusterID << ", Loyalty: " << loyalty << ", Volume: " << phg.partWeight(clusterID) << ", Rho: " << loyalty_rho  << ", Eta: " << eta<< std::endl;
+////
+////            pi_mod += loyalty_rho - expected_edges;
+////        }
+//        //LOG << "For he " << he;
+//        for (size_t cluster = 0; cluster < per_cluster_loyalty.size(); cluster++) {
+//            if(phg.partWeight(cluster) != 0) { // check if cluster is non-empty, i.e., it exists
+//                //LOG << "Cluster " << cluster << " with part weight " << phg.partWeight(cluster);
+//                // Calculate eta for the current cluster C
+//                //LOG << "Cluster " << cluster;
+//                auto vol_C = static_cast<double>(phg.partVolume(cluster));
+//                double eta = theta * (1.0 - (vol_C / vol_H));
+//                //LOG << "Vol = " << vol_C << " and eta = " << eta;
+//                // Calculate expected edges in cluster according to Random Hypergraph Expansion Model
+//                //double expected_edges = (std::pow((1.0 - eta), 2) * std::pow((1.0 + ((gamma * eta) / (1.0 - gamma))),-1))/m;
+//                //LOG << "(1 - theta)^2 = " << std::pow((1.0 - eta), 2);
+//                //LOG << "(1-gamma + gamma * eta) = " << ((1.0 - gamma) / (1.0 - gamma + (gamma * eta)));
+//                double expected_edges = (std::pow((1.0 - eta), 2) * ((1.0 - gamma) / (1.0 - gamma + (gamma * eta))));
+//                //LOG << "Exp(|E(" << cluster << ")|) = " << expected_edges * m;
+//                //LOG << "Exp(|E(" << cluster << ")|) subtracted = " << expected_edges;
+//                if (per_cluster_loyalty[cluster] == 0) {
+//                    // only remove exp edges to cluster / m from pi mod score
+//                    //LOG << cluster << ": no loyalty - " << cluster << " loses exp edges";
+//                    pi_mod -= (expected_edges/m);
+//                } else if (per_cluster_loyalty[cluster] > 0) {
+//                    double loyalty_C = per_cluster_loyalty[cluster] / totalEdgeWeight;
+//                    // Apply function rho to loyalty -> set to linear-over-log as suggested by authors
+//                    double loyalty_rho = 0;
+//                    if (loyalty_C >= theta) {
+//                        loyalty_rho = loyalty_C / std::log2((1.0 / loyalty_C) + 1.0);
+//                        //LOG << "Loyalty of he to " << cluster << " = " << loyalty_C << " with loyalty_rho = " << loyalty_rho;
+//                    }
+//                    //pi_mod += ((loyalty_rho - expected_edges)/m);
+//                    pi_mod += (loyalty_rho/m);
+//                    pi_mod -= (expected_edges/m);
+//                }
+//            }
+//        }
+//        //LOG << "----------";
+//    });
+//    LOG << "Computed pi_mod = " << pi_mod;
+//  }
 
 
   return obj.combine(std::plus<>()) / (PartitionedHypergraph::is_graph ? 2 : 1);
