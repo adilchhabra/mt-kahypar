@@ -129,7 +129,7 @@ struct PiModAttributedGains {
 
       // loyalty of hyperedge if hn is in its own cluster
       //double l_1 = static_cast<double>(sync_update.hn_weight) / static_cast<double>(sync_update.edge_weight_from_nodes);
-      double l_1 = (static_cast<double>(sync_update.hn_weight)/static_cast<double>(sync_update.edge_size))/ sync_update.edge_weight_from_nodes;
+      double l_1 = (static_cast<double>(sync_update.hn_weight)/static_cast<double>(sync_update.edge_strength))/ sync_update.edge_weight_from_nodes;
       double l_1_rho = compute_loyalty_rho(l_1, sync_update.edge_weight_from_nodes, theta);
 
       // compute loyalty of he to From cluster (does not include hn_weight)

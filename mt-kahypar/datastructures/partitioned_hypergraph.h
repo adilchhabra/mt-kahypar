@@ -404,6 +404,11 @@ class PartitionedHypergraph {
     return _hg->edgeSize(e);
   }
 
+  // ! Number of pins of a hyperedge at top level
+  HypernodeID edgeStrength(const HyperedgeID e) const {
+    return _hg->edgeStrength(e);
+  }
+
   // ! Returns, whether a hyperedge is enabled or not
   bool edgeIsEnabled(const HyperedgeID e) const {
     return _hg->edgeIsEnabled(e);
@@ -625,14 +630,14 @@ class PartitionedHypergraph {
     ASSERT(force_moving_fixed_vertices || !isFixed(u));
     const HypernodeWeight wu = nodeWeight(u);
     const HypernodeWeight to_weight_after = _part_weights[to].add_fetch(wu, std::memory_order_relaxed);
-    const double du = nodeStrength(u);
-    const HyperedgeID to_degree_after = _part_volumes[to].add_fetch(du, std::memory_order_relaxed);
+    const double su = nodeStrength(u);
+    const HyperedgeID to_degree_after = _part_volumes[to].add_fetch(su, std::memory_order_relaxed);
     //_part_volumes[to]+=(parallel::AtomicWrapper<double>(du));
 //    _part_volumes[to]+=du;
     if (to_weight_after <= max_weight_to) {
       _part_ids[u] = to;
       _part_weights[from].fetch_sub(wu, std::memory_order_relaxed);
-      _part_volumes[from].fetch_sub(du, std::memory_order_relaxed);
+      _part_volumes[from].fetch_sub(su, std::memory_order_relaxed);
       //_part_volumes[from]-=(parallel::AtomicWrapper<double>(du));
 //      _part_volumes[from]-=du;
       report_success();
@@ -641,10 +646,10 @@ class PartitionedHypergraph {
       sync_update.to = to;
       sync_update.hn = u;
       sync_update.hn_degree = nodeDegree(u);
-      sync_update.hn_strength = du;
+      sync_update.hn_strength = su;
       sync_update.hn_weight = wu;
-      sync_update.vol_H = topLevelTotalVertexDegree();
-      sync_update.m = topLevelNumEdges();
+      sync_update.vol_H = initialTotalVertexDegree();
+      sync_update.m = initialNumEdges();
       sync_update.vol_To = _part_volumes[to];
       sync_update.vol_From = _part_volumes[from];
       sync_update.target_graph = _target_graph;
@@ -656,7 +661,7 @@ class PartitionedHypergraph {
       return true;
     } else {
       _part_weights[to].fetch_sub(wu, std::memory_order_relaxed);
-      _part_volumes[to].fetch_sub(du, std::memory_order_relaxed);
+      _part_volumes[to].fetch_sub(su, std::memory_order_relaxed);
 //      _part_volumes[to]-=(parallel::AtomicWrapper<double>(du));
 //      _part_volumes[to]-=du;
       return false;
@@ -1271,6 +1276,7 @@ class PartitionedHypergraph {
     sync_update.he = he;
     sync_update.edge_weight = edgeWeight(he);
     sync_update.edge_size = edgeSize(he);
+    sync_update.edge_strength = edgeStrength(he);
     _pin_count_update_ownership[he].lock();
     notify_func(sync_update);
     sync_update.pin_count_in_from_part_after = decrementPinCountOfBlock(he, from);
@@ -1320,14 +1326,14 @@ class PartitionedHypergraph {
       if(pin != u) {
           if (partID(pin) == to) {
               //loyalty_To += nodeWeight(pin);
-              loyalty_To += (static_cast<double>(nodeWeight(pin))/static_cast<double>(edgeSize(e)));
+              loyalty_To += (static_cast<double>(nodeWeight(pin))/static_cast<double>(edgeStrength(e)));
           } else if (partID(pin) == from) {
               //loyalty_From += nodeWeight(pin);
-              loyalty_From += (static_cast<double>(nodeWeight(pin))/static_cast<double>(edgeSize(e)));
+              loyalty_From += (static_cast<double>(nodeWeight(pin))/static_cast<double>(edgeStrength(e)));
           }
       }
       //computed_edge_weight += nodeWeight(pin);
-      computed_edge_weight += (static_cast<double>(nodeWeight(pin))/static_cast<double>(edgeSize(e)));
+      computed_edge_weight += (static_cast<double>(nodeWeight(pin))/static_cast<double>(edgeStrength(e)));
     }
     sync_update.loyalty_towards_from_part = loyalty_From;
     sync_update.loyalty_towards_to_part = loyalty_To;

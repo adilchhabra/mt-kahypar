@@ -157,6 +157,7 @@ struct SynchronizedEdgeUpdate {
   HyperedgeID m = kInvalidHyperedge;
   HyperedgeID hn_degree = kInvalidHyperedge;
   HypernodeWeight hn_weight = kInvalidPartition;
+  HypernodeID edge_strength = 0;
   //HypernodeWeight edge_weight_from_nodes = kInvalidPartition;
   double edge_weight_from_nodes = kInvalidPartition;
   double loyalty_towards_to_part = 0;

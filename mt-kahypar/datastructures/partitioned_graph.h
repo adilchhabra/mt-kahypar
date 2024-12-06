@@ -470,6 +470,13 @@ private:
     return _hg->edgeSize(e);
   }
 
+  // ! Number of pins of a hyperedge at top level
+  HypernodeID edgeStrength(const HyperedgeID e) const {
+    throw NonSupportedOperationException(
+        "edgeStrength(e) is not supported for partitioned graph");
+    return kInvalidHypernode;
+  }
+
   // ! Returns, whether a hyperedge is enabled or not
   bool edgeIsEnabled(const HyperedgeID e) const {
     return _hg->edgeIsEnabled(e);

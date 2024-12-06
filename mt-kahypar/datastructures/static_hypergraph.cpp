@@ -146,10 +146,11 @@ namespace mt_kahypar::ds {
     // In this step hyperedges and incident nets of vertices are contracted inside the temporary
     // buffers. The vertex ids of pins are already remapped to the vertex ids in the coarse
     // graph and duplicates are removed. Also nets that become single-pin hyperedges are marked
-    // as invalid. All incident nets of vertices that are collapsed into one vertex in the coarse
+    // as invalid(*). All incident nets of vertices that are collapsed into one vertex in the coarse
     // graph are also aggregate in a consecutive memory range and duplicates are removed. Note
     // that parallel and single-pin hyperedges are not removed from the incident nets (will be done
     // in a postprocessing step).
+    // (*) self loops are retained if clustering
     auto cs2 = [](const HypernodeID x) { return x * x; };
     ConcurrentBucketMap<ContractedHyperedgeInformation> hyperedge_hash_map;
     hyperedge_hash_map.reserve_for_estimated_number_of_insertions(_num_hyperedges);
@@ -186,7 +187,7 @@ namespace mt_kahypar::ds {
                   tmp_incidence_array.begin() + incidence_array_start, first_invalid_entry_it);
           tmp_hyperedges[he].setSize(contracted_size);
 
-          if ( contracted_size > 1 || (contracted_size == 1 && _clustering_mode)) { //adil: todo fix for cluster
+          if ( contracted_size > 1 || (contracted_size == 1 && _clustering_mode)) { //adil: self loop retain
 
               // Compute hash of contracted hyperedge
             size_t footprint = kEdgeHashSeed;
@@ -349,6 +350,7 @@ namespace mt_kahypar::ds {
         if ( contracted_he_lhs.valid ) {
           const HyperedgeID lhs_he = contracted_he_lhs.he;
           HyperedgeWeight lhs_weight = tmp_hyperedges[lhs_he].weight();
+          HypernodeID lhs_strength = tmp_hyperedges[lhs_he].strength(); //adil clustering
           for ( size_t j = i + 1; j < hyperedge_bucket.size(); ++j ) {
             ContractedHyperedgeInformation& contracted_he_rhs = hyperedge_bucket[j];
             const HyperedgeID rhs_he = contracted_he_rhs.he;
@@ -357,6 +359,7 @@ namespace mt_kahypar::ds {
                  check_if_hyperedges_are_parallel(lhs_he, rhs_he) ) {
               // Hyperedges are parallel
               lhs_weight += tmp_hyperedges[rhs_he].weight();
+              lhs_strength += tmp_hyperedges[rhs_he].strength(); //adil clustering
               contracted_he_rhs.valid = false;
               valid_hyperedges[rhs_he] = false;
             } else if ( contracted_he_lhs.hash != contracted_he_rhs.hash  ) {
@@ -366,6 +369,7 @@ namespace mt_kahypar::ds {
             }
           }
           tmp_hyperedges[lhs_he].setWeight(lhs_weight);
+          tmp_hyperedges[lhs_he].setStrength(lhs_strength); //adil clustering
         }
       }
       hyperedge_hash_map.free(bucket);

@@ -91,8 +91,9 @@ struct ObjectiveFunction<PartitionedHypergraph, Objective::pimod> {
 
         // get total number of pins of the hyperedge
         //HypernodeID totalPins = phg.edgeSize(he);
-        auto vol_H = static_cast<double>(phg.topLevelTotalVertexDegree());
-        auto m = static_cast<double>(phg.topLevelNumEdges());
+        auto vol_H = static_cast<double>(phg.initialTotalVertexDegree());
+        auto m = static_cast<double>(phg.initialNumEdges());
+
         double theta = 0.3;
         double totalEdgeWeight = 0;
 
@@ -121,8 +122,8 @@ struct ObjectiveFunction<PartitionedHypergraph, Objective::pimod> {
         // go over all pins of the hyperedge and populate the map with loyalties for each incident cluster
         for (const HypernodeID& pin : phg.pins(he)) {
             PartitionID clusterID = phg.partID(pin);
-            per_cluster_loyalty[clusterID] += (static_cast<double>(phg.nodeWeight(pin))/static_cast<double>(phg.edgeSize(he)));
-            totalEdgeWeight += (static_cast<double>(phg.nodeWeight(pin))/static_cast<double>(phg.edgeSize(he)));
+            per_cluster_loyalty[clusterID] += (static_cast<double>(phg.nodeWeight(pin))/static_cast<double>(phg.edgeStrength(he)));
+            totalEdgeWeight += (static_cast<double>(phg.nodeWeight(pin))/static_cast<double>(phg.edgeStrength(he)));
         }
 
          for (size_t cluster = 0; cluster < per_cluster_loyalty.size(); cluster++) {
@@ -188,8 +189,8 @@ struct ObjectiveFunction<PartitionedHypergraph, Objective::pimod> {
                        std::vector<HypernodeID> &node_degrees_cluster*/) {
             // this function returns the change in modularity on moving hn to new_cluster
             //LOG << "Computing deltaPI for node " << hn << " to cluster " << new_cluster;
-            auto vol_H = static_cast<double>(phg.topLevelTotalVertexDegree());
-            auto m = static_cast<double>(phg.topLevelNumEdges());
+            auto vol_H = static_cast<double>(phg.initialTotalVertexDegree());
+            auto m = static_cast<double>(phg.initialNumEdges());
 
             // Calculate gamma
             const double gamma = (vol_H - 2 * m) / (vol_H - m);
@@ -229,8 +230,8 @@ struct ObjectiveFunction<PartitionedHypergraph, Objective::pimod> {
                              std::vector <double> &part_volumes_cluster,
         std::vector<HypernodeID> &node_degrees_cluster*/) {
             // this function returns the change in modularity on moving hn to new_cluster
-            auto vol_H = static_cast<double>(phg.topLevelTotalVertexDegree());
-            auto m = static_cast<double>(phg.topLevelNumEdges());
+            auto vol_H = static_cast<double>(phg.initialTotalVertexDegree());
+            auto m = static_cast<double>(phg.initialNumEdges());
 
             // Calculate gamma
             const double gamma = (vol_H - 2 * m) / (vol_H - m);

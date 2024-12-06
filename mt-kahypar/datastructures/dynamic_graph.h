@@ -594,6 +594,13 @@ class DynamicGraph {
     return isSinglePin(e) ? 1 : 2;
   }
 
+    // ! Number of pins of a hyperedge at top level
+    HypernodeID edgeStrength(const HyperedgeID e) const {
+        throw NonSupportedOperationException(
+                "edgeStrength(e) is not supported for dynamic graph");
+        return kInvalidHypernode;
+    }
+
   // ! Maximum size of a hyperedge
   HypernodeID maxEdgeSize() const {
     return 2;

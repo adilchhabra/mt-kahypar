@@ -698,6 +698,13 @@ class DynamicHypergraph {
     return hyperedge(e).size();
   }
 
+    // ! Number of pins of a hyperedge at top level
+    HypernodeID edgeStrength(const HyperedgeID e) const {
+        throw NonSupportedOperationException(
+                "edgeStrength(e) is not supported for dynamic hypergraph");
+        return kInvalidHypernode;
+    }
+
   // ! Maximum size of a hyperedge
   HypernodeID maxEdgeSize() const {
     return _max_edge_size;

@@ -119,6 +119,8 @@ namespace mt_kahypar {
       _progress.setObjective(_current_metrics.quality);
       _progress += partitioned_hg.initialNumNodes() - num_nodes_on_previous_level;
     }
+//      LOG << "Top level vol_H = " << partitioned_hg.topLevelTotalVertexDegree() <<"; Current level vol_H = " << partitioned_hg.initialTotalVertexDegree();
+//      LOG << "Top level m = " << partitioned_hg.topLevelNumEdges() <<"; Current level m = " << partitioned_hg.initialNumEdges();
 
     ASSERT(metrics::quality(*_uncoarseningData.partitioned_hg, _context) == _current_metrics.quality,
       V(_current_metrics.quality) << V(metrics::quality(*_uncoarseningData.partitioned_hg, _context)));

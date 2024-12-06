@@ -84,10 +84,10 @@ namespace {
 
     HyperedgeID input_he_count = hypergraph.initialNumEdges();
 
-    LOG << "Output node strengths: ";
-    for(const auto & node: hypergraph.nodes()) {
-        LOG << "Node " << node << " has strength = " << hypergraph.nodeStrength(node);
-    }
+//    LOG << "Output node strengths: ";
+//    for(const auto & node: hypergraph.nodes()) {
+//        LOG << "Node " << node << " has strength = " << hypergraph.nodeStrength(node);
+//    }
 
     // ################## COARSENING ##################
     mt_kahypar::io::printCoarseningBanner(context);
@@ -108,10 +108,10 @@ namespace {
         mt_kahypar::io::printHypergraphInfo(
           utils::cast<Hypergraph>(coarsestHypergraph), context,
           "Coarsened Hypergraph", context.partition.show_memory_consumption);
-          LOG << "Output node strengths after coarsening: ";
-          for(const auto & node: utils::cast<Hypergraph>(coarsestHypergraph).nodes()) {
-              LOG << "Node " << node << " has strength = " << utils::cast<Hypergraph>(coarsestHypergraph).nodeStrength(node);
-          }
+//          LOG << "Output node strengths after coarsening: ";
+//          for(const auto & node: utils::cast<Hypergraph>(coarsestHypergraph).nodes()) {
+//              LOG << "Node " << node << " has strength = " << utils::cast<Hypergraph>(coarsestHypergraph).nodeStrength(node);
+//          }
       }
     }
     timer.stop_timer("coarsening");
@@ -206,10 +206,10 @@ namespace {
         context.utility_id).printInitialPartitioningStats();
     }
     timer.stop_timer("initial_partitioning");
-      LOG << "Output node strengths after IP: ";
-      for(const auto & node: phg.nodes()) {
-          LOG << "Node " << node << " has strength = " << phg.nodeStrength(node);
-      }
+//      LOG << "Output node strengths after IP: ";
+//      for(const auto & node: phg.nodes()) {
+//          LOG << "Node " << node << " has strength = " << phg.nodeStrength(node);
+//      }
 
 
     // ################## UNCOARSENING ##################
