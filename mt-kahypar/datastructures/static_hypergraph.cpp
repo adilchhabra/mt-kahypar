@@ -74,6 +74,8 @@ namespace mt_kahypar::ds {
             _tmp_contraction_buffer->tmp_num_incident_nets;
     Array<parallel::IntegralAtomicWrapper<HypernodeWeight>>& hn_weights =
             _tmp_contraction_buffer->hn_weights;
+    Array<parallel::AtomicWrapper<double>>& hn_strengths =
+            _tmp_contraction_buffer->hn_strengths;
     Array<Hyperedge>& tmp_hyperedges = _tmp_contraction_buffer->tmp_hyperedges;
     IncidenceArray& tmp_incidence_array = _tmp_contraction_buffer->tmp_incidence_array;
     Array<size_t>& he_sizes = _tmp_contraction_buffer->he_sizes;
@@ -84,6 +86,7 @@ namespace mt_kahypar::ds {
     ASSERT(static_cast<size_t>(_total_degree) <= tmp_incident_nets.size());
     ASSERT(static_cast<size_t>(_num_hypernodes) <= tmp_num_incident_nets.size());
     ASSERT(static_cast<size_t>(_num_hypernodes) <= hn_weights.size());
+    ASSERT(static_cast<size_t>(_num_hypernodes) <= hn_strengths.size());
     ASSERT(static_cast<size_t>(_num_hyperedges) <= tmp_hyperedges.size());
     ASSERT(static_cast<size_t>(_num_pins) <= tmp_incidence_array.size());
     ASSERT(static_cast<size_t>(_num_hyperedges) <= he_sizes.size());
@@ -115,6 +118,7 @@ namespace mt_kahypar::ds {
       // Reset tmp contraction buffer
       if ( hn < num_hypernodes ) {
         hn_weights[hn] = 0;
+        hn_strengths[hn] = parallel::AtomicWrapper(0.0); //adil
         tmp_hypernodes[hn] = Hypernode(true);
         tmp_num_incident_nets[hn] = 0;
       }
@@ -132,6 +136,8 @@ namespace mt_kahypar::ds {
       ASSERT(coarse_hn < num_hypernodes, V(coarse_hn) << V(num_hypernodes));
       // Weight vector is atomic => thread-safe
       hn_weights[coarse_hn] += nodeWeight(hn);
+      hn_strengths[coarse_hn] += nodeStrength(hn); //adil
+      //LOG << "Node " << hn << " is added to block " << coarse_hn;
       // Aggregate upper bound for number of incident nets of the contracted vertex
       tmp_num_incident_nets[coarse_hn] += nodeDegree(hn);
     });
@@ -247,6 +253,7 @@ namespace mt_kahypar::ds {
           high_degree_vertices.push_back(coarse_hn);
         }
         tmp_hypernodes[coarse_hn].setWeight(hn_weights[coarse_hn]);
+        tmp_hypernodes[coarse_hn].setStrength(hn_strengths[coarse_hn]); //adil
         tmp_hypernodes[coarse_hn].setFirstEntry(incident_nets_start);
       });
 
@@ -288,9 +295,11 @@ namespace mt_kahypar::ds {
           tmp_hypernodes[coarse_hn].setSize(contracted_size);
 
           if (deterministic) {
+              LOG << RED << "Det";
             // sort for determinism
-            tbb::parallel_sort(tmp_incident_nets.begin() + incident_nets_start,
-                               tmp_incident_nets.begin() + incident_nets_start + contracted_size);
+//            adil: todo modern c++20 compat
+//            tbb::parallel_sort(tmp_incident_nets.begin() + incident_nets_start,
+//                               tmp_incident_nets.begin() + incident_nets_start + contracted_size);
           }
         }
         duplicate_incident_nets_map.free();

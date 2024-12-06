@@ -129,6 +129,15 @@ class AtomicWrapper : public std::atomic<T> {
       cur = this->load(std::memory_order_relaxed);
     }
   }
+
+    // unfortunately the internal value M_i is private, so we cannot issue __atomic_add_fetch( &M_i, i, int(m) ) ourselves
+    MT_KAHYPAR_ATTRIBUTE_ALWAYS_INLINE T add_fetch(T i, std::memory_order m = std::memory_order_seq_cst) {
+        return this->fetch_add(i, m) + i;
+    }
+
+    MT_KAHYPAR_ATTRIBUTE_ALWAYS_INLINE T sub_fetch(T i, std::memory_order m = std::memory_order_seq_cst) {
+        return this->fetch_sub(i, m) - i;
+    }
 };
 
 //template<typename T> using IntegralAtomicWrapper = CAtomic<T>;

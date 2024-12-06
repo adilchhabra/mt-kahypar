@@ -157,11 +157,13 @@ struct SynchronizedEdgeUpdate {
   HyperedgeID m = kInvalidHyperedge;
   HyperedgeID hn_degree = kInvalidHyperedge;
   HypernodeWeight hn_weight = kInvalidPartition;
-  HypernodeWeight edge_weight_from_nodes = kInvalidPartition;
+  //HypernodeWeight edge_weight_from_nodes = kInvalidPartition;
+  double edge_weight_from_nodes = kInvalidPartition;
   double loyalty_towards_to_part = 0;
   double loyalty_towards_from_part = 0;
-  HypernodeID vol_To = kInvalidHypernode;
-  HypernodeID vol_From = kInvalidHypernode;
+  double vol_To = 0;
+  double vol_From = 0;
+  double hn_strength = 0;
 };
 
 struct NoOpDeltaFunc {

@@ -415,6 +415,13 @@ private:
     return _hg->nodeDegree(u);
   }
 
+  // ! Strength of a hypernode
+  double nodeStrength(const HypernodeID u) const {
+      throw NonSupportedOperationException(
+              "nodeStrength(u) is only supported on hypergraphgraph data structure");
+      return 0;
+  }
+
   // ! Returns, whether a hypernode is enabled or not
   bool nodeIsEnabled(const HypernodeID u) const {
     return _hg->nodeIsEnabled(u);

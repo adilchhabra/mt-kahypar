@@ -79,6 +79,7 @@ namespace mt_kahypar {
       // Project partition to the hypergraph on the next level of the hierarchy
       _timer.start_timer("projecting_partition", "Projecting Partition");
       const size_t num_nodes_on_previous_level = partitioned_hg.initialNumNodes();
+      LOG << "This level has a hg with " << num_nodes_on_previous_level << " nodes";
       if (_current_level == 0) {
         partitioned_hg.setHypergraph(_hg);
       } else {
@@ -87,9 +88,18 @@ namespace mt_kahypar {
       // Hypergraph stores partition from previous level.
       // We now extract the block ids and reset the partition to reuse the
       // data structure for the current level.
-      partitioned_hg.extractPartIDs(_block_ids);
+//        LOG << "Output node strengths before reset: ";
+//        for(PartitionID block = 0; block < _context.partition.k; ++block) {
+//            LOG << "Block " << block << " has strength = " << partitioned_hg.partVolume(block);
+//        }
+
+        partitioned_hg.extractPartIDs(_block_ids);
       partitioned_hg.resetData();
       GainCachePtr::resetGainCache(_gain_cache);
+//        LOG << "Output node strengths after reset: ";
+//        for(PartitionID block = 0; block < _context.partition.k; ++block) {
+//            LOG << "Block " << block << " has strength = " << partitioned_hg.partVolume(block);
+//        }
 
       // Assign nodes of current level to their corresponding representative of the previous level
       partitioned_hg.doParallelForAllNodes([&](const HypernodeID hn) {
@@ -100,6 +110,7 @@ namespace mt_kahypar {
       });
       partitioned_hg.initializePartition();
       _timer.stop_timer("projecting_partition");
+      LOG << "After refine quality = " << metrics::quality(partitioned_hg,_context,true);
 
       // Improve partition
       IUncoarsener<TypeTraits>::refine();

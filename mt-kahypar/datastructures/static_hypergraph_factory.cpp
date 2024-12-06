@@ -112,6 +112,7 @@ namespace mt_kahypar::ds {
         if ( hyperedge_weight ) {
           hyperedge.setWeight(hyperedge_weight[pos]);
         }
+        hyperedge.setStrength(pin_prefix_sum.value(pos)); //adil
 
         const HyperedgeID he = pos;
         size_t incidence_array_pos = hyperedge.firstEntry();
@@ -122,6 +123,9 @@ namespace mt_kahypar::ds {
           hypergraph._incidence_array[incidence_array_pos++] = pin;
           // Add hyperedge he as a incident net to pin
           const size_t incident_nets_pos = incident_net_prefix_sum[pin] + incident_nets_position[pin]++;
+          // adil: Add hyperedge he strength to current pin strength
+          //hypergraph.hypernode(pin).addStrength(hyperedge.strength());
+          hypergraph.hypernode(pin).addStrength(1.0/pin_prefix_sum.value(pos));
           ASSERT(incident_nets_pos < incident_net_prefix_sum[pin + 1]);
           hypergraph._incident_nets[incident_nets_pos] = he;
         }
@@ -137,6 +141,7 @@ namespace mt_kahypar::ds {
         if ( hypernode_weight ) {
           hypernode.setWeight(hypernode_weight[pos]);
         }
+        //hypernode.setStrength(incident_net_prefix_sum.value(pos));
       });
     };
 

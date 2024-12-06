@@ -65,9 +65,8 @@ namespace mt_kahypar {
       if (best_move.from != best_move.to && perform_move) {
         PartitionID from = best_move.from;
         PartitionID to = best_move.to;
-        //LOG << "Moving node " << hn << " from block " << best_move.from << " to block " << best_move.to;
         Gain delta_before = _gain.localDelta();
-        HyperedgeWeight old_pi_mod = metrics::quality(hypergraph, _context);
+//        HyperedgeWeight old_pi_mod = metrics::quality(hypergraph, _context);
         bool changed_part = changeNodePart<unconstrained>(hypergraph, hn, from, to, objective_delta);
 
         ASSERT(!unconstrained || changed_part);
@@ -82,8 +81,8 @@ namespace mt_kahypar {
 
           bool accept_move = (move_delta == best_move.gain || move_delta <= 0);
           if (accept_move) {
-              HyperedgeWeight new_pi_mod = metrics::quality(hypergraph, _context);
-              LOG << "Moving " << hn << " to " << best_move.to << " gives gain " << best_move.gain << " or att = " << move_delta << " and changes pi_mod from " << old_pi_mod << " to " << new_pi_mod << " which gives delta = " << std::abs(new_pi_mod - old_pi_mod);
+//              HyperedgeWeight new_pi_mod = metrics::quality(hypergraph, _context);
+//              LOG << "Moving " << hn << " to " << best_move.to << " gives gain " << best_move.gain << " or att = " << move_delta << " and changes pi_mod from " << old_pi_mod << " to " << new_pi_mod << " which gives delta = " << std::abs(new_pi_mod - old_pi_mod);
             if constexpr (!unconstrained) {
               // in unconstrained case, we don't want to activate neighbors if the move is undone
               // by the rebalancing
@@ -92,7 +91,7 @@ namespace mt_kahypar {
           } else {
             // If the real gain is not equal with the computed gain and
             // worsens the solution quality we revert the move.
-            //LOG << "Got rev";
+            LOG << RED << "Got rev - att = " << move_delta << " and computed = " << best_move.gain << WHITE;
             ASSERT(hypergraph.partID(hn) == to);
             changeNodePart<unconstrained>(hypergraph, hn, to, from, objective_delta);
           }
@@ -171,7 +170,7 @@ namespace mt_kahypar {
       _old_partition_is_balanced = metrics::isBalanced(hypergraph, _context);
       moveActiveNodes<true>(hypergraph, next_active_nodes);
       // here we can recompute the score
-      LOG << "After changes quality recomputed: " << metrics::quality(hypergraph,_context);
+      LOG << "After label propogation iteration quality recomputed: " << metrics::quality(hypergraph,_context);
     } else {
       moveActiveNodes<false>(hypergraph, next_active_nodes);
     }

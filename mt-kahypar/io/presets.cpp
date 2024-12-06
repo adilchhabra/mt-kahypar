@@ -616,6 +616,8 @@ std::vector<option> load_clustering_preset() {
     create_option("max-steiner-tree-size", "4"),
     create_option("mapping-largest-he-fraction", "0.0"),
     create_option("mapping-min-pin-coverage", "0.05"),
+    // main -> clustering
+    create_option("theta", "0.5"),
   };
 }
 

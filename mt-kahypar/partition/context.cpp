@@ -255,6 +255,12 @@ namespace mt_kahypar {
     return str;
   }
 
+  std::ostream & operator<< (std::ostream& str, const ClusteringParameters& params) {
+    str << "Clustering Parameters:             " << std::endl;
+    str << "  PI Mod Theta(Q):                  " << params.theta << std::endl;
+    return str;
+  }
+
   bool Context::isNLevelPartitioning() const {
     return partition.partition_type == N_LEVEL_GRAPH_PARTITIONING ||
       partition.partition_type == N_LEVEL_HYPERGRAPH_PARTITIONING;
@@ -517,6 +523,9 @@ namespace mt_kahypar {
     if ( context.partition.objective == Objective::steiner_tree ) {
       str << context.mapping
           << "-------------------------------------------------------------------------------\n";
+    } else if ( context.partition.objective == Objective::pimod) {
+        str << context.clustering
+            << "-------------------------------------------------------------------------------\n";
     }
     str << context.shared_memory
         << "-------------------------------------------------------------------------------";

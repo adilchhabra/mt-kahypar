@@ -36,31 +36,67 @@
 namespace mt_kahypar {
 namespace utils {
 
-template<typename T>
-double parallel_stdev(const std::vector<T>& data, const double avg, const size_t n) {
-    return std::sqrt(tbb::parallel_reduce(
-            tbb::blocked_range<size_t>(UL(0), data.size()), 0.0,
-            [&](tbb::blocked_range<size_t>& range, double init) -> double {
-            double tmp_stdev = init;
-            for ( size_t i = range.begin(); i < range.end(); ++i ) {
-                tmp_stdev += (data[i] - avg) * (data[i] - avg);
-            }
-            return tmp_stdev;
-            }, std::plus<double>()) / ( n- 1 ));
-}
+//template<typename T>
+//double parallel_stdev(const std::vector<T>& data, const double avg, const size_t n) {
+//    return std::sqrt(tbb::parallel_reduce(
+//            tbb::blocked_range<size_t>(UL(0), data.size()), 0.0,
+//            [&](tbb::blocked_range<size_t>& range, double init) -> double {
+//            double tmp_stdev = init;
+//            for ( size_t i = range.begin(); i < range.end(); ++i ) {
+//                tmp_stdev += (data[i] - avg) * (data[i] - avg);
+//            }
+//            return tmp_stdev;
+//            }, std::plus<double>()) / ( n- 1 ));
+//}
+//
+//template<typename T>
+//double parallel_avg(const std::vector<T>& data, const size_t n) {
+//    return tbb::parallel_reduce(
+//            tbb::blocked_range<size_t>(UL(0), data.size()), 0.0,
+//            [&](tbb::blocked_range<size_t>& range, double init) -> double {
+//            double tmp_avg = init;
+//            for ( size_t i = range.begin(); i < range.end(); ++i ) {
+//                tmp_avg += static_cast<double>(data[i]);
+//            }
+//            return tmp_avg;
+//            }, std::plus<double>()) / static_cast<double>(n);
+//}
 
-template<typename T>
-double parallel_avg(const std::vector<T>& data, const size_t n) {
-    return tbb::parallel_reduce(
-            tbb::blocked_range<size_t>(UL(0), data.size()), 0.0,
-            [&](tbb::blocked_range<size_t>& range, double init) -> double {
-            double tmp_avg = init;
-            for ( size_t i = range.begin(); i < range.end(); ++i ) {
-                tmp_avg += static_cast<double>(data[i]);
-            }
-            return tmp_avg;
-            }, std::plus<double>()) / static_cast<double>(n);
-}
+// Function to calculate standard deviation in parallel
+    template<typename T>
+    double parallel_stdev(const std::vector<T>& data, const double avg, const size_t n) {
+        return std::sqrt(
+                tbb::parallel_reduce(
+                        tbb::blocked_range<size_t>(0, data.size()), 0.0,
+                        // Range function: computes partial results
+                        [&](const tbb::blocked_range<size_t>& range, double init) -> double {
+                            for (size_t i = range.begin(); i < range.end(); ++i) {
+                                init += (data[i] - avg) * (data[i] - avg);
+                            }
+                            return init;
+                        },
+                        // Combiner function: combines partial results
+                        std::plus<>()
+                ) / (n - 1)
+        );
+    }
+
+// Function to calculate average in parallel
+    template<typename T>
+    double parallel_avg(const std::vector<T>& data, const size_t n) {
+        return tbb::parallel_reduce(
+                tbb::blocked_range<size_t>(0, data.size()), 0.0,
+                // Range function: computes partial results
+                [&](const tbb::blocked_range<size_t>& range, double init) -> double {
+                    for (size_t i = range.begin(); i < range.end(); ++i) {
+                        init += static_cast<double>(data[i]);
+                    }
+                    return init;
+                },
+                // Combiner function: combines partial results
+                std::plus<>()
+        ) / static_cast<double>(n);
+    }
 
 template<typename Hypergraph>
 static inline double avgHyperedgeDegree(const Hypergraph& hypergraph) {

@@ -78,6 +78,7 @@ class MultilevelCoarsener : public ICoarsener,
   using AtomicMatchingState = parallel::IntegralAtomicWrapper<uint8_t>;
   using AtomicWeight = parallel::IntegralAtomicWrapper<HypernodeWeight>;
   using AtomicID = parallel::IntegralAtomicWrapper<HypernodeID>;
+  using AtomicStrength = parallel::AtomicWrapper<double>;
 
   static constexpr bool debug = false;
   static constexpr bool enable_heavy_assert = false;
@@ -96,6 +97,7 @@ class MultilevelCoarsener : public ICoarsener,
     _current_vertices(),
     _matching_state(),
     _cluster_weight(),
+    _cluster_strength(), //adil
     _matching_partner(),
     _pass_nr(0),
     _progress_bar(utils::cast<Hypergraph>(hypergraph).initialNumNodes(), 0, false),
@@ -110,6 +112,8 @@ class MultilevelCoarsener : public ICoarsener,
     }, [&] {
       _cluster_weight.resize(_hg.initialNumNodes());
     }, [&] {
+      _cluster_strength.resize(_hg.initialNumNodes());
+    }, [&] {
       _matching_partner.resize(_hg.initialNumNodes());
     });
   }
@@ -122,7 +126,7 @@ class MultilevelCoarsener : public ICoarsener,
   ~MultilevelCoarsener() {
     parallel::parallel_free(
       _current_vertices, _matching_state,
-      _cluster_weight, _matching_partner);
+      _cluster_weight, _cluster_strength, _matching_partner);
   }
 
   void disableRandomization() {
@@ -160,6 +164,7 @@ class MultilevelCoarsener : public ICoarsener,
       cluster_ids[hn] = hn;
       if ( current_hg.nodeIsEnabled(hn) ) {
         _cluster_weight[hn] = current_hg.nodeWeight(hn);
+        _cluster_strength[hn] = parallel::AtomicWrapper<double>(current_hg.nodeStrength(hn)); //adil
       }
     });
 
@@ -470,6 +475,7 @@ class MultilevelCoarsener : public ICoarsener,
     bool success = false;
     const HypernodeWeight weight_of_u = hypergraph.nodeWeight(u);
     const HypernodeWeight weight_of_rep = _cluster_weight[rep].load(std::memory_order_relaxed);
+    const double strength_of_u = hypergraph.nodeStrength(u); //adil clustering
     bool cluster_join_operation_allowed =
       weight_of_u + weight_of_rep <= _context.coarsening.max_allowed_node_weight;
     if constexpr ( has_fixed_vertices ) {
@@ -480,6 +486,8 @@ class MultilevelCoarsener : public ICoarsener,
     if ( cluster_join_operation_allowed ) {
       cluster_ids[u] = rep;
       _cluster_weight[rep].fetch_add(weight_of_u, std::memory_order_relaxed);
+      //_cluster_strength[rep].fetch_add(strength_of_u, std::memory_order_relaxed); //adil clustering
+      _cluster_strength[rep]+=(parallel::AtomicWrapper<double>(strength_of_u));
       ++contracted_nodes;
       success = true;
     }
@@ -517,6 +525,7 @@ class MultilevelCoarsener : public ICoarsener,
   parallel::scalable_vector<HypernodeID> _current_vertices;
   parallel::scalable_vector<AtomicMatchingState> _matching_state;
   parallel::scalable_vector<AtomicWeight> _cluster_weight;
+  parallel::scalable_vector<AtomicStrength> _cluster_strength;
   parallel::scalable_vector<AtomicID> _matching_partner;
   int _pass_nr;
   utils::ProgressBar _progress_bar;

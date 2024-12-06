@@ -84,12 +84,14 @@ class StaticHypergraph {
       _begin(0),
       _size(0),
       _weight(1),
+      _strength(0.0),
       _valid(false) { }
 
     Hypernode(const bool valid) :
       _begin(0),
       _size(0),
       _weight(1),
+      _strength(0.0),
       _valid(valid) { }
 
     // Sentinel Constructor
@@ -97,6 +99,7 @@ class StaticHypergraph {
       _begin(begin),
       _size(0),
       _weight(1),
+      _strength(0.0),
       _valid(false) { }
 
     bool isDisabled() const {
@@ -139,7 +142,7 @@ class StaticHypergraph {
       _size = size;
     }
 
-    HyperedgeWeight weight() const {
+      HypernodeWeight weight() const {
       return _weight;
     }
 
@@ -148,6 +151,20 @@ class StaticHypergraph {
       _weight = weight;
     }
 
+      double strength() const {
+          return _strength;
+      }
+
+      void setStrength(double strength) {
+          ASSERT(!isDisabled());
+          _strength = strength;
+      }
+
+      void addStrength(double strength) {
+          ASSERT(!isDisabled());
+          _strength += strength;
+      }
+
    private:
     // ! Index of the first element in _incident_nets
     size_t _begin;
@@ -155,6 +172,8 @@ class StaticHypergraph {
     size_t _size;
     // ! Hypernode weight
     HypernodeWeight _weight;
+    // ! Hypernode weight
+    double _strength;
     // ! Flag indicating whether or not the element is active.
     bool _valid;
   };
@@ -232,6 +251,15 @@ class StaticHypergraph {
       _weight = weight;
     }
 
+      HyperedgeWeight strength() const {
+          return _strength;
+      }
+
+      void setStrength(HyperedgeWeight strength) {
+          ASSERT(!isDisabled());
+          _strength = strength;
+      }
+
     bool operator== (const Hyperedge& rhs) const {
       return _begin == rhs._begin && _size == rhs._size && _weight == rhs._weight;
     }
@@ -247,6 +275,8 @@ class StaticHypergraph {
     size_t _size;
     // ! hyperedge weight
     HyperedgeWeight _weight;
+    // ! hyperedge strength
+    HyperedgeWeight _strength;
     // ! Flag indicating whether or not the element is active.
     bool _valid;
   };
@@ -361,6 +391,8 @@ class StaticHypergraph {
       }, [&] {
         hn_weights.resize("Coarsening", "hn_weights", num_hypernodes);
       }, [&] {
+        hn_strengths.resize("Coarsening", "hn_strengths", num_hypernodes);
+      }, [&] {
         tmp_hyperedges.resize("Coarsening", "tmp_hyperedges", num_hyperedges);
       }, [&] {
         tmp_incidence_array.resize("Coarsening", "tmp_incidence_array", num_pins);
@@ -376,6 +408,7 @@ class StaticHypergraph {
     IncidentNets tmp_incident_nets;
     Array<parallel::IntegralAtomicWrapper<size_t>> tmp_num_incident_nets;
     Array<parallel::IntegralAtomicWrapper<HypernodeWeight>> hn_weights;
+    Array<parallel::AtomicWrapper<double>> hn_strengths;
     Array<Hyperedge> tmp_hyperedges;
     IncidenceArray tmp_incidence_array;
     Array<size_t> he_sizes;
@@ -600,6 +633,17 @@ class StaticHypergraph {
     return hypernode(u).setWeight(weight);
   }
 
+    // ! Strength of a vertex
+    double nodeStrength(const HypernodeID u) const {
+        return hypernode(u).strength();
+    }
+
+    // ! Sets the strength of a vertex
+    void setNodeStrength(const HypernodeID u, const double strength) {
+        ASSERT(!hypernode(u).isDisabled(), "Hypernode" << u << "is disabled");
+        return hypernode(u).setStrength(strength);
+    }
+
   // ! Degree of a hypernode
   HyperedgeID nodeDegree(const HypernodeID u) const {
     ASSERT(!hypernode(u).isDisabled(), "Hypernode" << u << "is disabled");
@@ -654,6 +698,18 @@ class StaticHypergraph {
     ASSERT(!hyperedge(e).isDisabled(), "Hyperedge" << e << "is disabled");
     return hyperedge(e).setWeight(weight);
   }
+
+    // ! Weight of a hyperedge
+    HypernodeWeight edgeStrength(const HyperedgeID e) const {
+        ASSERT(!hyperedge(e).isDisabled(), "Hyperedge" << e << "is disabled");
+        return hyperedge(e).strength();
+    }
+
+    // ! Sets the weight of a hyperedge
+    void setEdgeStrength(const HyperedgeID e, const HyperedgeWeight strength) {
+        ASSERT(!hyperedge(e).isDisabled(), "Hyperedge" << e << "is disabled");
+        return hyperedge(e).setStrength(strength);
+    }
 
   // ! Number of pins of a hyperedge
   HypernodeID edgeSize(const HyperedgeID e) const {

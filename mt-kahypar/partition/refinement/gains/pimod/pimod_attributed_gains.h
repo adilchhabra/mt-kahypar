@@ -36,9 +36,12 @@ namespace mt_kahypar {
  * @param threshold Threshold for applying the rho function
  * @return Computed rho value
  */
-inline double compute_loyalty_rho(double loyalty, double threshold) {
+inline double compute_loyalty_rho(double loyalty, HypernodeWeight totalEdgeWeight, double threshold) {
     if (loyalty >= threshold) {
-        return loyalty / std::log2((1.0 / loyalty) + 1.0);
+        //return loyalty / std::log2((1.0 / loyalty) + 1.0);
+        double log = std::log((1.0/loyalty)+1) / std::log(2);
+        double linear_log = loyalty * (1.0/log);
+        return totalEdgeWeight * linear_log;
     }
     return 0.0;
 }
@@ -66,19 +69,20 @@ struct PiModAttributedGains {
         double theta = 0.3;
 
         // volume of old_cluster (if hn in it)
-        auto vol_C = static_cast<double>(sync_update.vol_From + sync_update.hn_degree);
-        double eta_C = theta * (1.0 - (vol_C / vol_H));
+        double vol_C = sync_update.vol_From + sync_update.hn_strength;
+        double eta_C = theta * (1.0 - (vol_C / m));
+        //LOG << "ATT: For node " << sync_update.hn << " with volume " << sync_update.hn_strength << " to cluster " << sync_update.from << " vol_C = " << vol_C;
 
         // volume of cluster containing only hn
-        auto vol_hn = static_cast<double>(sync_update.hn_degree);
-        double eta_hn = theta * (1.0 - (vol_hn / vol_H));
+        double vol_hn = sync_update.hn_strength;
+        double eta_hn = theta * (1.0 - (vol_hn / m));
 
         // volume of old_cluster without hn
-        auto vol_C_without_hn = static_cast<double>(sync_update.vol_From);
-        double eta_C_without_hn = theta * (1.0 - (vol_C_without_hn / vol_H));
+        double vol_C_without_hn = sync_update.vol_From;
+        double eta_C_without_hn = theta * (1.0 - (vol_C_without_hn / m));
 
-        double change_in_expected_edges = (delta_supt_C / m) + ((expected_edges_in_cluster(gamma, eta_C) +
-                                          expected_edges_in_cluster(gamma, eta_hn) - expected_edges_in_cluster(gamma, eta_C_without_hn))/sync_update.hn_degree);
+        double change_in_expected_edges = (delta_supt_C / m) + ((expected_edges_in_cluster(gamma, eta_C_without_hn) +
+                                          expected_edges_in_cluster(gamma, eta_hn) - expected_edges_in_cluster(gamma, eta_C))/sync_update.hn_degree);
 
         return -1 * change_in_expected_edges;
     }
@@ -94,20 +98,20 @@ struct PiModAttributedGains {
         double theta = 0.3;
 
         // volume of new_cluster
-        auto vol_C = static_cast<double>(sync_update.vol_To - sync_update.hn_degree);
-        double eta_C = theta * (1.0 - (vol_C / vol_H));
-
+        double vol_C = sync_update.vol_To - sync_update.hn_strength;
+        double eta_C = theta * (1.0 - (vol_C / m));
+        //LOG << "ATT: For node " << sync_update.hn << " with volume " << sync_update.hn_strength << " to cluster " << sync_update.to << " vol_C = " << vol_C;
         //LOG << "vol_C = " << vol_C << " and eta_C = " << eta_C;
 
         // volume of cluster containing only hn
-        auto vol_hn = static_cast<double>(sync_update.hn_degree);
-        double eta_hn = theta * (1.0 - (vol_hn / vol_H));
+        double vol_hn = sync_update.hn_strength;
+        double eta_hn = theta * (1.0 - (vol_hn / m));
 
         //LOG << "vol_hn = " << vol_hn << " and eta_hn = " << eta_hn;
 
         // volume of new_cluster with hn
-        auto vol_C_with_hn = static_cast<double>(sync_update.vol_To);
-        double eta_C_with_hn = theta * (1.0 - (vol_C_with_hn / vol_H));
+        double vol_C_with_hn = sync_update.vol_To;
+        double eta_C_with_hn = theta * (1.0 - (vol_C_with_hn / m));
 
         //LOG << "vol_C_with_hn = " << vol_C_with_hn << " and eta_C_with_hn = " << eta_C_with_hn;
 
@@ -120,34 +124,41 @@ struct PiModAttributedGains {
     static HyperedgeWeight gain(const SynchronizedEdgeUpdate& sync_update) {
       // here, we receive volumes of To and From, and loyalty to To and From with hn already in To
       double theta = 0.3;
+//      LOG << "ATT: For node " << sync_update.hn << " and edge " << sync_update.he;
       //LOG << "For he = " << sync_update.he;
 
       // loyalty of hyperedge if hn is in its own cluster
-      double l_1 = static_cast<double>(sync_update.hn_weight) / static_cast<double>(sync_update.edge_weight_from_nodes);
-      double l_1_rho = compute_loyalty_rho(l_1, theta);
+      //double l_1 = static_cast<double>(sync_update.hn_weight) / static_cast<double>(sync_update.edge_weight_from_nodes);
+      double l_1 = (static_cast<double>(sync_update.hn_weight)/static_cast<double>(sync_update.edge_size))/ sync_update.edge_weight_from_nodes;
+      double l_1_rho = compute_loyalty_rho(l_1, sync_update.edge_weight_from_nodes, theta);
 
       // compute loyalty of he to From cluster (does not include hn_weight)
-      double l_2_From = static_cast<double>(sync_update.loyalty_towards_from_part) / static_cast<double>(sync_update.edge_weight_from_nodes);
-      double l_2_From_rho = compute_loyalty_rho(l_2_From, theta);
+      //double l_2_From = (static_cast<double>(sync_update.loyalty_towards_from_part)/static_cast<double>(sync_update.edge_size)) / static_cast<double>(sync_update.edge_weight_from_nodes);
+      double l_2_From = sync_update.loyalty_towards_from_part / sync_update.edge_weight_from_nodes;
+      double l_2_From_rho = compute_loyalty_rho(l_2_From, sync_update.edge_weight_from_nodes, theta);
 
       // compute loyalty if hn is not in To yet
-      double l_2_To = static_cast<double>(sync_update.loyalty_towards_to_part) / static_cast<double>(sync_update.edge_weight_from_nodes);
-      double l_2_To_rho = compute_loyalty_rho(l_2_To, theta);
+      //double l_2_To = (static_cast<double>(sync_update.loyalty_towards_to_part)/static_cast<double>(sync_update.edge_size)) / static_cast<double>(sync_update.edge_weight_from_nodes);
+      double l_2_To = sync_update.loyalty_towards_to_part / sync_update.edge_weight_from_nodes;
+      double l_2_To_rho = compute_loyalty_rho(l_2_To, sync_update.edge_weight_from_nodes, theta);
 
       // compute loyalty if hn is in From
-      double l_3_From = static_cast<double>(sync_update.loyalty_towards_from_part + sync_update.hn_weight) / static_cast<double>(sync_update.edge_weight_from_nodes);
-      double l_3_From_rho = compute_loyalty_rho(l_3_From, theta);
+      double l_3_From = l_2_From + l_1;
+      double l_3_From_rho = compute_loyalty_rho(l_3_From, sync_update.edge_weight_from_nodes, theta);
 
       // compute loyalty if hn is in To
-      double l_3_To = static_cast<double>(sync_update.loyalty_towards_to_part + sync_update.hn_weight) / static_cast<double>(sync_update.edge_weight_from_nodes);
-      double l_3_To_rho = compute_loyalty_rho(l_3_To, theta);
+      double l_3_To = l_2_To + l_1;
+      double l_3_To_rho = compute_loyalty_rho(l_3_To, sync_update.edge_weight_from_nodes, theta);
 
       double delta_supt_to_From_of_he = (l_3_From_rho - l_1_rho - l_2_From_rho);
       double delta_supt_to_C_of_he = (l_3_To_rho - l_1_rho - l_2_To_rho);
+//      LOG << "ATT: delta supt from = " << sync_update.from << " is " << delta_supt_to_From_of_he;
+//      LOG << "ATT: delta supt to = " << sync_update.to << " is " << delta_supt_to_C_of_he;
 
-      // compute pi modularity change if the hypernode is removed from its cluster
+        // compute pi modularity change if the hypernode is removed from its cluster
       double change_in_pi_modularity_u_from_From = 0;
-      if(sync_update.hn_degree != (sync_update.vol_From+sync_update.hn_degree)) {
+      if(sync_update.hn_strength != (sync_update.vol_From+sync_update.hn_strength)) {
+          //LOG << RED << "Came" << WHITE;
           change_in_pi_modularity_u_from_From = deltaPIRemove(delta_supt_to_From_of_he, sync_update);
       }
       double change_in_pi_modularity_u_to_To = deltaPI(delta_supt_to_C_of_he, sync_update);
@@ -156,7 +167,7 @@ struct PiModAttributedGains {
 //      LOG << "ATT: Node "<< sync_update.hn << " to cluster " << sync_update.to << " has pi_mod gain " <<
 //      change_in_pi_modularity << " with from = " << change_in_pi_modularity_u_from_From <<
 //      " and to = " << change_in_pi_modularity_u_to_To;
-      auto final = static_cast<HyperedgeWeight>(std::floor(change_in_pi_modularity * 100000));
+      auto final = static_cast<HyperedgeWeight>(std::floor(change_in_pi_modularity * 10000000));
       return -1 * final;
   }
 };

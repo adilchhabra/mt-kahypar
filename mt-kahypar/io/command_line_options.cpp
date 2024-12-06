@@ -736,6 +736,17 @@ namespace mt_kahypar {
     return shared_memory_options;
   }
 
+  po::options_description createClusteringOptionsDescription(Context& context,
+                                                             const int num_columns) {
+    po::options_description clustering_options("Clustering Options", num_columns);
+      clustering_options.add_options()
+             ("theta",
+                     po::value<double>(&context.clustering.theta)->value_name("<double>"),
+                     "Specified theta (Q) used in the PI Modularity computation. Any hyperedges with < theta loyalty to a cluster \n"
+                     "is rejected and not included in PI Modularity computation.");
+    return clustering_options;
+  }
+
 
   po::options_description getIniOptionsDescription(Context& context) {
     const int num_columns = 80;
@@ -755,6 +766,8 @@ namespace mt_kahypar {
             createMappingOptionsDescription(context, num_columns);
     po::options_description shared_memory_options =
             createSharedMemoryOptionsDescription(context, num_columns);
+    po::options_description clustering_options =
+            createClusteringOptionsDescription(context, num_columns);
 
     po::options_description ini_line_options;
     ini_line_options.add(general_options)
@@ -764,7 +777,8 @@ namespace mt_kahypar {
             .add(refinement_options)
             .add(flow_options)
             .add(mapping_options)
-            .add(shared_memory_options);
+            .add(shared_memory_options)
+            .add(clustering_options);
 
     return ini_line_options;
   }
@@ -816,6 +830,8 @@ namespace mt_kahypar {
             createMappingOptionsDescription(context, num_columns);
     po::options_description shared_memory_options =
             createSharedMemoryOptionsDescription(context, num_columns);
+    po::options_description clustering_options =
+            createClusteringOptionsDescription(context, num_columns);
 
     po::options_description cmd_line_options;
     cmd_line_options
@@ -828,7 +844,8 @@ namespace mt_kahypar {
             .add(refinement_options)
             .add(flow_options)
             .add(mapping_options)
-            .add(shared_memory_options);
+            .add(shared_memory_options)
+            .add(clustering_options);
 
     po::variables_map cmd_vm;
     po::store(po::parse_command_line(argc, argv, cmd_line_options), cmd_vm);
@@ -859,7 +876,8 @@ namespace mt_kahypar {
             .add(refinement_options)
             .add(flow_options)
             .add(mapping_options)
-            .add(shared_memory_options);
+            .add(shared_memory_options)
+            .add(clustering_options);
     if ( context.partition.preset_file != "" ) {
       // load from preset file
       std::ifstream file(context.partition.preset_file.c_str());

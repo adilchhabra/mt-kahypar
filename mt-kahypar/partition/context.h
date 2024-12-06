@@ -268,6 +268,12 @@ struct SharedMemoryParameters {
 
 std::ostream & operator<< (std::ostream& str, const SharedMemoryParameters& params);
 
+struct ClusteringParameters {
+    double theta = 0.5; // default PI Mod theta value - hyperedge loyalty >= 0.5
+};
+
+std::ostream & operator<< (std::ostream& str, const ClusteringParameters& params);
+
 class Context {
  public:
   PartitioningParameters partition { };
@@ -277,6 +283,7 @@ class Context {
   RefinementParameters refinement { };
   MappingParameters mapping { };
   SharedMemoryParameters shared_memory { };
+  ClusteringParameters clustering { };
   ContextType type = ContextType::main;
 
   std::string algorithm_name = "Mt-KaHyPar";

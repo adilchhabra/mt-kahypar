@@ -511,6 +511,13 @@ class DynamicGraph {
     return _adjacency_array.nodeDegree(u);
   }
 
+    // ! Strength of a vertex
+    HypernodeWeight nodeStrength(const HypernodeID u) const {
+        throw NonSupportedOperationException(
+                "nodeStrength() is not supported in dynamic graph");
+        return -1;
+    }
+
   // ! Returns, whether a hypernode is enabled or not
   bool nodeIsEnabled(const HypernodeID u) const {
     return !hypernode(u).isDisabled();

@@ -254,12 +254,13 @@ namespace mt_kahypar::ds {
         auto comparator = [](const TmpEdgeInformation& e1, const TmpEdgeInformation& e2) {
           return e1._target < e2._target;
         };
-        if (end - start > HIGH_DEGREE_CONTRACTION_THRESHOLD
-            || resulting_ranges.size() < 2 * static_cast<size_t>(tbb::this_task_arena::max_concurrency())) {
-          tbb::parallel_sort(tmp_edges.begin() + start, tmp_edges.begin() + end, comparator);
-        } else {
+//        adil: todo c++20 compat
+//        if (end - start > HIGH_DEGREE_CONTRACTION_THRESHOLD
+//            || resulting_ranges.size() < 2 * static_cast<size_t>(tbb::this_task_arena::max_concurrency())) {
+//          tbb::parallel_sort(tmp_edges.begin() + start, tmp_edges.begin() + end, comparator);
+//        } else {
           std::sort(tmp_edges.begin() + start, tmp_edges.begin() + end, comparator);
-        }
+//        }
       });
     }
 

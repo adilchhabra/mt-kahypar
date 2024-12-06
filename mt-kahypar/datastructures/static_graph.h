@@ -626,6 +626,13 @@ class StaticGraph {
     return node(u + 1).firstEntry() - node(u).firstEntry();
   }
 
+    // ! Strength of a vertex
+    HypernodeWeight nodeStrength(const HypernodeID u) const {
+        throw NonSupportedOperationException(
+                "nodeStrength() is not supported in static graph");
+        return -1;
+    }
+
   // ! Returns whether a hypernode is enabled or not
   bool nodeIsEnabled(const HypernodeID u) const {
     return !node(u).isDisabled();
