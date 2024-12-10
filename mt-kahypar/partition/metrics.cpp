@@ -92,69 +92,25 @@ struct ObjectiveFunction<PartitionedHypergraph, Objective::pimod> {
     auto vol_H = static_cast<double>(phg.initialTotalVertexDegree());
     auto m = static_cast<double>(phg.initialNumEdges());
 
-    double theta = 0.6;
+    double theta = 0.5;
     double totalEdgeWeight = 0;
 
     // Calculate gamma
     double gamma = (vol_H - 2 * m) / (vol_H - m);
-    // bool found_node = false;
 
-//        std::vector <double> part_volumes_cluster(phg.k(),0);
-//        std::vector<HypernodeID> node_degrees_cluster(phg.topLevelNumNodes(),0);
-//        std::vector<HyperedgeWeight> edge_weights_cluster(phg.topLevelNumEdges(),0);
-//        // compute all cluster edge weights and correspondingly node degrees and part Volumes
-//        for(const HyperedgeID& all_he : phg.edges()) {
-//            for(const HypernodeID & int_pin: phg.pins(all_he)) {
-//                edge_weights_cluster[all_he] += phg.nodeWeight(int_pin);
-//            }
-//        }
-//        for(const HypernodeID & node:  phg.nodes()) {
-//            for (const HyperedgeID & inc_he: phg.incidentEdges(node)) {
-//                node_degrees_cluster[node] += edge_weights_cluster[inc_he];
-//            }
-//        }
-//        for(const HypernodeID & node:  phg.nodes()) {
-//            part_volumes_cluster[phg.partID(node)] += node_degrees_cluster[node];
-//        }
-//        HypernodeID clusters_found = 0;
-//        PartitionID detected_cluster = 0;
     // go over all pins of the hyperedge and populate the map with loyalties for each incident cluster
     size_t pin_idx = 0;
     for (const HypernodeID& pin : phg.pins(he)) {
       PartitionID clusterID = phg.partID(pin);
-//            clusters_found++;
-//            detected_cluster = clusterID;
-//            per_cluster_loyalty[clusterID] += (static_cast<double>(phg.nodeWeight(pin))/static_cast<double>(phg.edgeStrength(he)));
-//            totalEdgeWeight += (static_cast<double>(phg.nodeWeight(pin))/static_cast<double>(phg.edgeStrength(he)));
       per_cluster_loyalty[clusterID] += phg.getNodeStrength(pin_idx, he);
-      // if (phg.getNodeStrength(pin_idx, he) != (static_cast<double>(phg.nodeWeight(pin)) / static_cast<double>(phg.edgeStrength(he)))) {
-      //   LOG << RED << "FHDH: " << phg.getNodeStrength(pin_idx, he) << " and " << (static_cast<double>(phg.nodeWeight(pin)) / static_cast<double>(phg.edgeStrength(he)));
-      // }
       totalEdgeWeight += phg.getNodeStrength(pin_idx, he);
       pin_idx++;
     }
-//        if(clusters_found == 1 && phg.edgeSize(he)==1) {
-//            LOG << "Self loop for cluster " << detected_cluster << " is " << he << " with weight = " << phg.edgeWeight(he) << " and strength = " << phg.edgeStrength(he);
-//        }
 
     for (size_t cluster = 0; cluster < per_cluster_loyalty.size(); cluster++) {
       if (phg.partWeight(cluster) != 0) {       // check if cluster is non-empty, i.e., it exists
         // Calculate eta for the current cluster C
         double vol_C = phg.partVolume(cluster);
-//                double comp_vol = 0;
-//                for(const HypernodeID& node : phg.nodes()) {
-//                    if(phg.partID(node) == cluster) {
-//                        comp_vol += phg.nodeStrength(node);
-//                    }
-//                }
-//                if(std::abs(comp_vol-vol_C)>1) {
-//                    LOG << RED << "returned = " << vol_C << " and computed = " << comp_vol;
-//                    exit(0);
-//                }
-//                if(vol_C < 0) {
-//                    LOG << RED << "NEG VOL OF CLUSTER " << cluster;
-//                    exit(0);
-//                }
         double eta = theta * (1.0 - (vol_C / m));
         // Calculate expected edges in cluster according to Random Hypergraph Expansion Model
         // double expected_edges = (std::pow(1.0 - eta, 2) * std::pow((1.0 + ((gamma * eta) / (1.0 - gamma))),-1))/m;
@@ -185,91 +141,6 @@ struct ObjectiveFunction<PartitionedHypergraph, Objective::pimod> {
     return -1* final;
   }
 };
-
-double expected_edges_in_cluster(const double gamma, double eta) {
-  // return expected edges in cluster according to Random Hypergraph Expansion Model
-  double exp_value = (1.0 - gamma) * (std::pow(1.0 - eta, 2) / (1.0 - gamma + (gamma * eta)));
-  return exp_value;
-}
-
-template <typename PartitionedHypergraph>
-double deltaPI(const PartitionedHypergraph& phg,
-               const HypernodeID hn,
-               PartitionID new_cluster,
-               double delta_supt_C /*,std::vector <double> &part_volumes_cluster,
-                       std::vector<HypernodeID> &node_degrees_cluster*/) {
-  // this function returns the change in modularity on moving hn to new_cluster
-  // LOG << "Computing deltaPI for node " << hn << " to cluster " << new_cluster;
-  auto vol_H = static_cast<double>(phg.initialTotalVertexDegree());
-  auto m = static_cast<double>(phg.initialNumEdges());
-
-  // Calculate gamma
-  const double gamma = (vol_H - 2 * m) / (vol_H - m);
-  double theta = 0.6;
-
-  // volume of new_cluster
-  double vol_C = phg.partVolume(new_cluster) - phg.nodeStrength(hn);
-  // auto vol_C = static_cast<double>(part_volumes_cluster[new_cluster] - node_degrees_cluster[hn]);
-  // LOG << "Vol_C_prev = " << vol_C_prev << " and vol_C = " << vol_C;
-  double eta_C = theta * (1.0 - (vol_C / vol_H));
-  // double eta_C = theta * (1.0 - (vol_C / vol_H));
-  // LOG << "Eta_C_prev = " << eta_C_prev << " and eta_C = " << eta_C;
-  // LOG << "vol_C = " << vol_C << " and eta_C = " << eta_C;
-
-  // volume of cluster containing only hn
-  double vol_hn = phg.nodeStrength(hn);
-  // auto vol_hn = static_cast<double>(node_degrees_cluster[hn]);
-  double eta_hn = theta * (1.0 - (vol_hn / vol_H));
-
-  // LOG << "vol_hn = " << vol_hn << " and eta_hn = " << eta_hn;
-
-  // volume of new_cluster with hn
-  double vol_C_with_hn = vol_C + vol_hn;
-  double eta_C_with_hn = theta * (1.0 - (vol_C_with_hn / vol_H));
-
-  double change_in_expected_edges = (delta_supt_C / m) + expected_edges_in_cluster(gamma, eta_C) +
-                                    expected_edges_in_cluster(gamma, eta_hn) - expected_edges_in_cluster(gamma, eta_C_with_hn);
-
-  return change_in_expected_edges;
-}
-
-template <typename PartitionedHypergraph>
-double deltaPIRemove(const PartitionedHypergraph& phg,
-                     const HypernodeID hn,
-                     PartitionID old_cluster,
-                     double delta_supt_C /*,
-                             std::vector <double> &part_volumes_cluster,
-        std::vector<HypernodeID> &node_degrees_cluster*/) {
-  // this function returns the change in modularity on moving hn to new_cluster
-  auto vol_H = static_cast<double>(phg.initialTotalVertexDegree());
-  auto m = static_cast<double>(phg.initialNumEdges());
-
-  // Calculate gamma
-  const double gamma = (vol_H - 2 * m) / (vol_H - m);
-  double theta = 0.6;
-
-  // volume of old_cluster
-  double vol_C = phg.partVolume(old_cluster) + phg.nodeStrength(hn);
-  // auto vol_C = static_cast<double>(part_volumes_cluster[old_cluster] + node_degrees_cluster[hn]);
-  // LOG << "Vol_C_prev = " << vol_C_prev << " and vol_C = " << vol_C;
-  double eta_C = theta * (1.0 - (vol_C / vol_H));
-  // double eta_C = theta * (1.0 - (vol_C / vol_H));
-  // LOG << "Eta_C_prev = " << eta_C_prev << " and eta_C = " << eta_C;
-
-  // volume of cluster containing only hn
-  double vol_hn = phg.nodeStrength(hn);
-  // auto vol_hn = static_cast<double>(node_degrees_cluster[hn]);
-  double eta_hn = theta * (1.0 - (vol_hn / vol_H));
-
-  // volume of old_cluster without hn
-  double vol_C_without_hn = vol_C - vol_hn;
-  double eta_C_without_hn = theta * (1.0 - (vol_C_without_hn / vol_H));
-
-  double change_in_expected_edges = (delta_supt_C / m) + expected_edges_in_cluster(gamma, eta_C) +
-                                    expected_edges_in_cluster(gamma, eta_hn) - expected_edges_in_cluster(gamma, eta_C_without_hn);
-
-  return -1 * change_in_expected_edges;
-}
 
 template <Objective objective, typename PartitionedHypergraph>
 HyperedgeWeight compute_objective_parallel(const PartitionedHypergraph& phg) {

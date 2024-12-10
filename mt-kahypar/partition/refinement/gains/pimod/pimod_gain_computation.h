@@ -66,8 +66,8 @@ class PiModGainComputation : public GainComputationBase<PiModGainComputation, Pi
     // map to store incident cluster IDs and the gain in pi modularity associated
     // with them
     std::unordered_map<PartitionID, double> delta_supt;
-    double theta = 0.6;
-
+    double theta = 0.5;
+    int total_self_loop_count = 0;
     // iterate over all incident edges of hn to compute change in support of incident hyperedges
     // if the hypernode is moved to the corresponding cluster
     for (const HyperedgeID& he : phg.incidentEdges(hn)) {
@@ -84,24 +84,21 @@ class PiModGainComputation : public GainComputationBase<PiModGainComputation, Pi
       size_t hn_pin_idx = 0;
       PartitionID clusterID = 0;
       for (const HypernodeID& pin: phg.pins(he)) {
+        if (phg.edgeSize(he) == 1 && phg.partID(pin) == from) {
+          total_self_loop_count++;
+        }
         if (pin != hn) {
           clusterID = phg.partID(pin);
-          // per_cluster_loyalty[clusterID] += static_cast<double>(phg.nodeWeight(pin));
-//                per_cluster_loyalty[clusterID] += (static_cast<double>(phg.nodeWeight(pin))/static_cast<double>(phg.edgeStrength(he)));
+
           per_cluster_loyalty[clusterID] += phg.getNodeStrength(pin_idx, he);
         } else {
           hn_pin_idx = pin_idx;
         }
-        // totalEdgeWeight += phg.nodeWeight(pin);
-        // totalEdgeWeight += phg.nodeStrength(pin);
-//            totalEdgeWeight += (static_cast<double>(phg.nodeWeight(pin))/static_cast<double>(phg.edgeStrength(he)));
         totalEdgeWeight += phg.getNodeStrength(pin_idx, he);
         ++pin_idx;
       }
 
       // loyalty of hyperedge if hn is in its own cluster
-      // double l_1 = static_cast<double>(phg.nodeWeight(hn)) / totalEdgeWeight;
-      // double l_1 = (static_cast<double>(phg.nodeWeight(hn))/static_cast<double>(phg.edgeStrength(he))) / totalEdgeWeight;
       double l_1 = phg.getNodeStrength(hn_pin_idx, he) / totalEdgeWeight;
       // LOG << "l_1 = " << phg.getNodeStrength(hn_pin_idx, he) << " / " << totalEdgeWeight << " = " << l_1;
       double l_1_rho = compute_loyalty_rho(l_1, totalEdgeWeight, theta);
@@ -124,6 +121,8 @@ class PiModGainComputation : public GainComputationBase<PiModGainComputation, Pi
         // LOG << "delta supt to = " << clusterID << " is " << (l_3_rho - l_1_rho - l_2_rho);
       }
     }
+
+    ASSERT(total_self_loop_count < 2);
 
     // compute pi modularity change if the hypernode is removed from its current cluster
     double change_in_pi_modularity_u_from_C = 0;
@@ -175,7 +174,7 @@ class PiModGainComputation : public GainComputationBase<PiModGainComputation, Pi
 
     // Calculate gamma
     const double gamma = (vol_H - 2 * m) / (vol_H - m);
-    double theta = 0.6;
+    double theta = 0.5;
 
     // volume of new_cluster
     double vol_C = phg.partVolume(new_cluster);
@@ -212,7 +211,7 @@ class PiModGainComputation : public GainComputationBase<PiModGainComputation, Pi
 
     // Calculate gamma
     const double gamma = (vol_H - 2 * m) / (vol_H - m);
-    double theta = 0.6;
+    double theta = 0.5;
 
     // volume of old_cluster
     double vol_C = phg.partVolume(old_cluster);
