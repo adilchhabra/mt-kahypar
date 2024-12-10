@@ -27,25 +27,23 @@
 
 #pragma once
 
-
 #include <tbb/parallel_for.h>
 
 #include "include/libmtkahypartypes.h"
 
-#include "mt-kahypar/macros.h"
 #include "mt-kahypar/datastructures/array.h"
-#include "mt-kahypar/datastructures/hypergraph_common.h"
 #include "mt-kahypar/datastructures/fixed_vertex_support.h"
+#include "mt-kahypar/datastructures/hypergraph_common.h"
+#include "mt-kahypar/macros.h"
 #include "mt-kahypar/parallel/atomic_wrapper.h"
 #include "mt-kahypar/parallel/stl/scalable_vector.h"
 #include "mt-kahypar/partition/context_enum_classes.h"
+#include "mt-kahypar/utils/exception.h"
 #include "mt-kahypar/utils/memory_tree.h"
 #include "mt-kahypar/utils/range.h"
-#include "mt-kahypar/utils/exception.h"
 
 namespace mt_kahypar {
 namespace ds {
-
 // Forward
 class StaticHypergraphFactory;
 template <typename Hypergraph,
@@ -53,7 +51,6 @@ template <typename Hypergraph,
 class PartitionedHypergraph;
 
 class StaticHypergraph {
-
   static constexpr bool enable_heavy_assert = false;
 
   // During contractions we temporary memcpy all incident nets of a collapsed
@@ -70,7 +67,8 @@ class StaticHypergraph {
   using AtomicHypernodeID = parallel::IntegralAtomicWrapper<HypernodeID>;
   using AtomicHypernodeWeight = parallel::IntegralAtomicWrapper<HypernodeWeight>;
   using UncontractionFunction = std::function<void (const HypernodeID, const HypernodeID, const HyperedgeID)>;
-  #define NOOP_BATCH_FUNC [] (const HypernodeID, const HypernodeID, const HyperedgeID) { }
+  #define NOOP_BATCH_FUNC [] (const HypernodeID, const HypernodeID, const HyperedgeID) { \
+}
 
   /**
    * Represents a hypernode of the hypergraph and contains all information
@@ -142,7 +140,7 @@ class StaticHypergraph {
       _size = size;
     }
 
-      HypernodeWeight weight() const {
+    HypernodeWeight weight() const {
       return _weight;
     }
 
@@ -151,19 +149,19 @@ class StaticHypergraph {
       _weight = weight;
     }
 
-      double strength() const {
-          return _strength;
-      }
+    double strength() const {
+      return _strength;
+    }
 
-      void setStrength(double strength) {
-          ASSERT(!isDisabled());
-          _strength = strength;
-      }
+    void setStrength(double strength) {
+      ASSERT(!isDisabled());
+      _strength = strength;
+    }
 
-      void addStrength(double strength) {
-          ASSERT(!isDisabled());
-          _strength += strength;
-      }
+    void addStrength(double strength) {
+      ASSERT(!isDisabled());
+      _strength += strength;
+    }
 
    private:
     // ! Index of the first element in _incident_nets
@@ -251,14 +249,14 @@ class StaticHypergraph {
       _weight = weight;
     }
 
-      HyperedgeWeight strength() const {
-          return _strength;
-      }
+    HyperedgeWeight strength() const {
+      return _strength;
+    }
 
-      void setStrength(HyperedgeWeight strength) {
-          ASSERT(!isDisabled());
-          _strength = strength;
-      }
+    void setStrength(HyperedgeWeight strength) {
+      ASSERT(!isDisabled());
+      _strength = strength;
+    }
 
     bool operator== (const Hyperedge& rhs) const {
       return _begin == rhs._begin && _size == rhs._size && _weight == rhs._weight;
@@ -371,6 +369,7 @@ class StaticHypergraph {
   static_assert(std::is_trivially_copyable<Hyperedge>::value, "Hyperedge is not trivially copyable");
 
   using IncidenceArray = Array<HypernodeID>;
+  using IncidentStrengthArray = Array<double>;
   using IncidentNets = Array<HyperedgeID>;
 
   // ! Contains buffers that are needed during multilevel contractions.
@@ -381,36 +380,39 @@ class StaticHypergraph {
                                   const HyperedgeID num_hyperedges,
                                   const HyperedgeID num_pins) {
       tbb::parallel_invoke([&] {
-        mapping.resize("Coarsening", "mapping", num_hypernodes);
-      }, [&] {
-        tmp_hypernodes.resize("Coarsening", "tmp_hypernodes", num_hypernodes);
-      }, [&] {
-        tmp_incident_nets.resize("Coarsening", "tmp_incident_nets", num_pins);
-      }, [&] {
-        tmp_num_incident_nets.resize("Coarsening", "tmp_num_incident_nets", num_hypernodes);
-      }, [&] {
-        hn_weights.resize("Coarsening", "hn_weights", num_hypernodes);
-      }, [&] {
-        hn_strengths.resize("Coarsening", "hn_strengths", num_hypernodes);
-      }, [&] {
-        tmp_hyperedges.resize("Coarsening", "tmp_hyperedges", num_hyperedges);
-      }, [&] {
-        tmp_incidence_array.resize("Coarsening", "tmp_incidence_array", num_pins);
-      }, [&] {
-        he_sizes.resize("Coarsening", "he_sizes", num_hyperedges);
-      }, [&] {
-        valid_hyperedges.resize("Coarsening", "valid_hyperedges", num_hyperedges);
-      });
+            mapping.resize("Coarsening", "mapping", num_hypernodes);
+          }, [&] {
+            tmp_hypernodes.resize("Coarsening", "tmp_hypernodes", num_hypernodes);
+          }, [&] {
+            tmp_incident_nets.resize("Coarsening", "tmp_incident_nets", num_pins);
+          }, [&] {
+            tmp_num_incident_nets.resize("Coarsening", "tmp_num_incident_nets", num_hypernodes);
+          }, [&] {
+            hn_weights.resize("Coarsening", "hn_weights", num_hypernodes);
+          }, [&] {
+            hn_strengths.resize("Coarsening", "hn_strengths", num_hypernodes); // adil clustering
+          }, [&] {
+            tmp_hyperedges.resize("Coarsening", "tmp_hyperedges", num_hyperedges);
+          }, [&] {
+            tmp_incidence_array.resize("Coarsening", "tmp_incidence_array", num_pins);
+          }, [&] {
+            tmp_incident_strength_array.resize("Coarsening", "tmp_incident_strength_array", num_pins);
+          }, [&] {
+            he_sizes.resize("Coarsening", "he_sizes", num_hyperedges);
+          }, [&] {
+            valid_hyperedges.resize("Coarsening", "valid_hyperedges", num_hyperedges);
+          });
     }
 
     Array<size_t> mapping;
     Array<Hypernode> tmp_hypernodes;
     IncidentNets tmp_incident_nets;
-    Array<parallel::IntegralAtomicWrapper<size_t>> tmp_num_incident_nets;
-    Array<parallel::IntegralAtomicWrapper<HypernodeWeight>> hn_weights;
-    Array<parallel::AtomicWrapper<double>> hn_strengths;
+    Array<parallel::IntegralAtomicWrapper<size_t> > tmp_num_incident_nets;
+    Array<parallel::IntegralAtomicWrapper<HypernodeWeight> > hn_weights;
+    Array<parallel::AtomicWrapper<double> > hn_strengths;
     Array<Hyperedge> tmp_hyperedges;
     IncidenceArray tmp_incidence_array;
+    IncidentStrengthArray tmp_incident_strength_array;
     Array<size_t> he_sizes;
     Array<size_t> valid_hyperedges;
   };
@@ -453,13 +455,14 @@ class StaticHypergraph {
     _incident_nets(),
     _hyperedges(),
     _incidence_array(),
+    _incident_strength_array(),
     _community_ids(0),
     _fixed_vertices(),
     _clustering_mode(false),
     _tmp_contraction_buffer(nullptr) { }
 
   StaticHypergraph(const StaticHypergraph&) = delete;
-  StaticHypergraph & operator= (const StaticHypergraph &) = delete;
+  StaticHypergraph & operator= (const StaticHypergraph&) = delete;
 
   StaticHypergraph(StaticHypergraph&& other) :
     _num_hypernodes(other._num_hypernodes),
@@ -475,6 +478,7 @@ class StaticHypergraph {
     _incident_nets(std::move(other._incident_nets)),
     _hyperedges(std::move(other._hyperedges)),
     _incidence_array(std::move(other._incidence_array)),
+    _incident_strength_array(std::move(other._incident_strength_array)),
     _community_ids(std::move(other._community_ids)),
     _fixed_vertices(std::move(other._fixed_vertices)),
     _clustering_mode(other._clustering_mode),
@@ -497,6 +501,7 @@ class StaticHypergraph {
     _incident_nets = std::move(other._incident_nets);
     _hyperedges = std::move(other._hyperedges);
     _incidence_array = std::move(other._incidence_array);
+    _incident_strength_array = std::move(other._incident_strength_array);
     _community_ids = std::move(other._community_ids);
     _fixed_vertices = std::move(other._fixed_vertices);
     _fixed_vertices.setHypergraph(this);
@@ -507,8 +512,8 @@ class StaticHypergraph {
   }
 
   ~StaticHypergraph() {
-    if ( _tmp_contraction_buffer ) {
-      delete(_tmp_contraction_buffer);
+    if (_tmp_contraction_buffer) {
+      delete (_tmp_contraction_buffer);
       _tmp_contraction_buffer = nullptr;
     }
     freeInternalData();
@@ -568,24 +573,24 @@ class StaticHypergraph {
 
   // ! Iterates in parallel over all active nodes and calls function f
   // ! for each vertex
-  template<typename F>
+  template <typename F>
   void doParallelForAllNodes(const F& f) const {
     tbb::parallel_for(ID(0), _num_hypernodes, [&](const HypernodeID& hn) {
-      if ( nodeIsEnabled(hn) ) {
-        f(hn);
-      }
-    });
+          if (nodeIsEnabled(hn)) {
+            f(hn);
+          }
+        });
   }
 
   // ! Iterates in parallel over all active edges and calls function f
   // ! for each net
-  template<typename F>
+  template <typename F>
   void doParallelForAllEdges(const F& f) const {
     tbb::parallel_for(ID(0), _num_hyperedges, [&](const HyperedgeID& he) {
-      if ( edgeIsEnabled(he) ) {
-        f(he);
-      }
-    });
+          if (edgeIsEnabled(he)) {
+            f(he);
+          }
+        });
   }
 
   // ! Returns a range of the active nodes of the hypergraph
@@ -620,7 +625,7 @@ class StaticHypergraph {
       _incidence_array.cbegin() + he.firstInvalidEntry());
   }
 
-    // ####################### Hypernode Information #######################
+  // ####################### Hypernode Information #######################
 
   // ! Weight of a vertex
   HypernodeWeight nodeWeight(const HypernodeID u) const {
@@ -633,16 +638,20 @@ class StaticHypergraph {
     return hypernode(u).setWeight(weight);
   }
 
-    // ! Strength of a vertex
-    double nodeStrength(const HypernodeID u) const {
-        return hypernode(u).strength();
-    }
+  // ! Strength of a vertex
+  double nodeStrength(const HypernodeID u) const {
+    return hypernode(u).strength();
+  }
 
-    // ! Sets the strength of a vertex
-    void setNodeStrength(const HypernodeID u, const double strength) {
-        ASSERT(!hypernode(u).isDisabled(), "Hypernode" << u << "is disabled");
-        return hypernode(u).setStrength(strength);
-    }
+  // ! Sets the strength of a vertex
+  void setNodeStrength(const HypernodeID u, const double strength) {
+    ASSERT(!hypernode(u).isDisabled(), "Hypernode" << u << "is disabled");
+    return hypernode(u).setStrength(strength);
+  }
+
+  double getNodeStrength(const HypernodeID pin, const HyperedgeID e) const {
+    return _incident_strength_array[pin + hyperedge(e).firstEntry()];
+  }
 
   // ! Degree of a hypernode
   HyperedgeID nodeDegree(const HypernodeID u) const {
@@ -699,17 +708,17 @@ class StaticHypergraph {
     return hyperedge(e).setWeight(weight);
   }
 
-    // ! Weight of a hyperedge
-    HypernodeWeight edgeStrength(const HyperedgeID e) const {
-        ASSERT(!hyperedge(e).isDisabled(), "Hyperedge" << e << "is disabled");
-        return hyperedge(e).strength();
-    }
+  // ! Weight of a hyperedge
+  HypernodeWeight edgeStrength(const HyperedgeID e) const {
+    ASSERT(!hyperedge(e).isDisabled(), "Hyperedge" << e << "is disabled");
+    return hyperedge(e).strength();
+  }
 
-    // ! Sets the weight of a hyperedge
-    void setEdgeStrength(const HyperedgeID e, const HyperedgeWeight strength) {
-        ASSERT(!hyperedge(e).isDisabled(), "Hyperedge" << e << "is disabled");
-        return hyperedge(e).setStrength(strength);
-    }
+  // ! Sets the weight of a hyperedge
+  void setEdgeStrength(const HyperedgeID e, const HyperedgeWeight strength) {
+    ASSERT(!hyperedge(e).isDisabled(), "Hyperedge" << e << "is disabled");
+    return hyperedge(e).setStrength(strength);
+  }
 
   // ! Number of pins of a hyperedge
   HypernodeID edgeSize(const HyperedgeID e) const {
@@ -778,7 +787,7 @@ class StaticHypergraph {
     _fixed_vertices.setMaxBlockWeight(max_block_weights);
   }
 
-  const FixedVertexSupport<StaticHypergraph>& fixedVertexSupport() const {
+  const FixedVertexSupport<StaticHypergraph> & fixedVertexSupport() const {
     return _fixed_vertices;
   }
 
@@ -801,7 +810,7 @@ class StaticHypergraph {
 
   bool registerContraction(const HypernodeID, const HypernodeID) {
     throw NonSupportedOperationException(
-      "registerContraction(u, v) is not supported in static hypergraph");
+            "registerContraction(u, v) is not supported in static hypergraph");
     return false;
   }
 
@@ -809,7 +818,7 @@ class StaticHypergraph {
                   const HypernodeWeight max_node_weight = std::numeric_limits<HypernodeWeight>::max()) {
     unused(max_node_weight);
     throw NonSupportedOperationException(
-      "contract(v, max_node_weight) is not supported in static hypergraph");
+            "contract(v, max_node_weight) is not supported in static hypergraph");
     return 0;
   }
 
@@ -819,12 +828,12 @@ class StaticHypergraph {
     unused(case_one_func);
     unused(case_two_func);
     throw NonSupportedOperationException(
-      "uncontract(batch) is not supported in static hypergraph");
+            "uncontract(batch) is not supported in static hypergraph");
   }
 
   VersionedBatchVector createBatchUncontractionHierarchy(const size_t) {
     throw NonSupportedOperationException(
-      "createBatchUncontractionHierarchy(batch_size) is not supported in static hypergraph");
+            "createBatchUncontractionHierarchy(batch_size) is not supported in static hypergraph");
     return { };
   }
 
@@ -839,7 +848,7 @@ class StaticHypergraph {
   */
   void removeEdge(const HyperedgeID he) {
     ASSERT(edgeIsEnabled(he), "Hyperedge" << he << "is disabled");
-    for ( const HypernodeID& pin : pins(he) ) {
+    for ( const HypernodeID& pin : pins(he)) {
       removeIncidentEdgeFromHypernode(he, pin);
     }
     ++_num_removed_hyperedges;
@@ -859,9 +868,9 @@ class StaticHypergraph {
     const size_t incidence_array_start = hyperedge(he).firstEntry();
     const size_t incidence_array_end = hyperedge(he).firstInvalidEntry();
     tbb::parallel_for(incidence_array_start, incidence_array_end, [&](const size_t pos) {
-      const HypernodeID pin = _incidence_array[pos];
-      removeIncidentEdgeFromHypernode(he, pin);
-    });
+          const HypernodeID pin = _incidence_array[pos];
+          removeIncidentEdgeFromHypernode(he, pin);
+        });
     disableHyperedge(he);
   }
 
@@ -874,20 +883,20 @@ class StaticHypergraph {
     const size_t incidence_array_start = hyperedge(he).firstEntry();
     const size_t incidence_array_end = hyperedge(he).firstInvalidEntry();
     tbb::parallel_for(incidence_array_start, incidence_array_end, [&](const size_t pos) {
-      const HypernodeID pin = _incidence_array[pos];
-      insertIncidentEdgeToHypernode(he, pin);
-    });
+          const HypernodeID pin = _incidence_array[pos];
+          insertIncidentEdgeToHypernode(he, pin);
+        });
   }
 
   parallel::scalable_vector<ParallelHyperedge> removeSinglePinAndParallelHyperedges() {
     throw NonSupportedOperationException(
-      "removeSinglePinAndParallelHyperedges() is not supported in static hypergraph");
+            "removeSinglePinAndParallelHyperedges() is not supported in static hypergraph");
     return { };
   }
 
   void restoreSinglePinAndParallelNets(const parallel::scalable_vector<ParallelHyperedge>&) {
     throw NonSupportedOperationException(
-      "restoreSinglePinAndParallelNets(hes_to_restore) is not supported in static hypergraph");
+            "restoreSinglePinAndParallelNets(hes_to_restore) is not supported in static hypergraph");
   }
 
   // ####################### Initialization / Reset Functions #######################
@@ -896,8 +905,8 @@ class StaticHypergraph {
   void copyCommunityIDs(const parallel::scalable_vector<PartitionID>& community_ids) {
     ASSERT(community_ids.size() == UI64(_num_hypernodes));
     doParallelForAllNodes([&](const HypernodeID& hn) {
-      _community_ids[hn] = community_ids[hn];
-    });
+          _community_ids[hn] = community_ids[hn];
+        });
   }
 
   // ! Reset internal community information
@@ -917,11 +926,12 @@ class StaticHypergraph {
   StaticHypergraph copy() const;
 
   // ! Reset internal data structure
-  void reset() { }
+  void reset() {
+  }
 
   // ! Free internal data in parallel
   void freeInternalData() {
-    if ( _num_hypernodes > 0 || _num_hyperedges > 0 ) {
+    if (_num_hypernodes > 0 || _num_hyperedges > 0) {
       freeTmpContractionBuffer();
     }
     _num_hypernodes = 0;
@@ -929,24 +939,24 @@ class StaticHypergraph {
   }
 
   void freeTmpContractionBuffer() {
-    if ( _tmp_contraction_buffer ) {
-      delete(_tmp_contraction_buffer);
+    if (_tmp_contraction_buffer) {
+      delete (_tmp_contraction_buffer);
       _tmp_contraction_buffer = nullptr;
     }
   }
 
   void memoryConsumption(utils::MemoryTreeNode* parent) const;
 
-    // ! Only for testing
+  // ! Only for testing
   bool verifyIncidenceArrayAndIncidentNets() {
     throw NonSupportedOperationException(
-      "verifyIncidenceArrayAndIncidentNets() not supported in static hypergraph");
+            "verifyIncidenceArrayAndIncidentNets() not supported in static hypergraph");
     return false;
   }
 
  private:
   friend class StaticHypergraphFactory;
-  template<typename Hypergraph>
+  template <typename Hypergraph>
   friend class CommunitySupport;
   template <typename Hypergraph,
             typename ConnectivityInformation>
@@ -955,13 +965,13 @@ class StaticHypergraph {
   // ####################### Hypernode Information #######################
 
   // ! Accessor for hypernode-related information
-  MT_KAHYPAR_ATTRIBUTE_ALWAYS_INLINE const Hypernode& hypernode(const HypernodeID u) const {
+  MT_KAHYPAR_ATTRIBUTE_ALWAYS_INLINE const Hypernode & hypernode(const HypernodeID u) const {
     ASSERT(u <= _num_hypernodes, "Hypernode" << u << "does not exist");
     return _hypernodes[u];
   }
 
   // ! To avoid code duplication we implement non-const version in terms of const version
-  MT_KAHYPAR_ATTRIBUTE_ALWAYS_INLINE Hypernode& hypernode(const HypernodeID u) {
+  MT_KAHYPAR_ATTRIBUTE_ALWAYS_INLINE Hypernode & hypernode(const HypernodeID u) {
     return const_cast<Hypernode&>(static_cast<const StaticHypergraph&>(*this).hypernode(u));
   }
 
@@ -977,13 +987,13 @@ class StaticHypergraph {
   // ####################### Hyperedge Information #######################
 
   // ! Accessor for hyperedge-related information
-  MT_KAHYPAR_ATTRIBUTE_ALWAYS_INLINE const Hyperedge& hyperedge(const HyperedgeID e) const {
+  MT_KAHYPAR_ATTRIBUTE_ALWAYS_INLINE const Hyperedge & hyperedge(const HyperedgeID e) const {
     ASSERT(e <= _num_hyperedges, "Hyperedge" << e << "does not exist");
     return _hyperedges[e];
   }
 
   // ! To avoid code duplication we implement non-const version in terms of const version
-  MT_KAHYPAR_ATTRIBUTE_ALWAYS_INLINE Hyperedge& hyperedge(const HyperedgeID e) {
+  MT_KAHYPAR_ATTRIBUTE_ALWAYS_INLINE Hyperedge & hyperedge(const HyperedgeID e) {
     return const_cast<Hyperedge&>(static_cast<const StaticHypergraph&>(*this).hyperedge(e));
   }
 
@@ -998,7 +1008,7 @@ class StaticHypergraph {
     Hypernode& hn = hypernode(u);
     size_t incident_nets_pos = hn.firstEntry();
     for ( ; incident_nets_pos < hn.firstInvalidEntry(); ++incident_nets_pos ) {
-      if ( _incident_nets[incident_nets_pos] == e ) {
+      if (_incident_nets[incident_nets_pos] == e) {
         break;
       }
     }
@@ -1015,12 +1025,12 @@ class StaticHypergraph {
     ASSERT(!hn.isDisabled(), "Hypernode" << u << "is disabled");
     HEAVY_REFINEMENT_ASSERT(std::count(_incident_nets.cbegin() + hn.firstEntry(),
                                        _incident_nets.cbegin() + hn.firstInvalidEntry(), e) == 0,
-                        "HN" << u << "is already connected to HE" << e);
+                            "HN" << u << "is already connected to HE" << e);
     const size_t incident_nets_start = hn.firstInvalidEntry();
     const size_t incident_nets_end = hypernode(u + 1).firstEntry();
     size_t incident_nets_pos = incident_nets_start;
     for ( ; incident_nets_pos < incident_nets_end; ++incident_nets_pos ) {
-      if ( _incident_nets[incident_nets_pos] == e ) {
+      if (_incident_nets[incident_nets_pos] == e) {
         break;
       }
     }
@@ -1031,7 +1041,7 @@ class StaticHypergraph {
 
   // ! Allocate the temporary contraction buffer
   void allocateTmpContractionBuffer() {
-    if ( !_tmp_contraction_buffer ) {
+    if (!_tmp_contraction_buffer) {
       _tmp_contraction_buffer = new TmpContractionBuffer(
         _num_hypernodes, _num_hyperedges, _num_pins);
     }
@@ -1064,6 +1074,8 @@ class StaticHypergraph {
   Array<Hyperedge> _hyperedges;
   // ! Incident nets of hypernodes
   IncidenceArray _incidence_array;
+  // ! Incident net strengths of hypernodes
+  IncidentStrengthArray _incident_strength_array;
 
   // ! Communities
   ds::Clustering _community_ids;
@@ -1078,6 +1090,5 @@ class StaticHypergraph {
   // ! to contract the hypergraph and to prevent expensive allocations
   TmpContractionBuffer* _tmp_contraction_buffer;
 };
-
 } // namespace ds
 } // namespace mt_kahypar

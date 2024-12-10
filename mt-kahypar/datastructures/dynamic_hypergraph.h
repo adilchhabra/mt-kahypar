@@ -34,22 +34,21 @@
 
 #include "include/libmtkahypartypes.h"
 
-#include "kahypar-resources/meta/mandatory.h"
 #include "kahypar-resources/datastructure/fast_reset_flag_array.h"
+#include "kahypar-resources/meta/mandatory.h"
 #include "kahypar-resources/utils/math.h"
 
-#include "mt-kahypar/datastructures/hypergraph_common.h"
-#include "mt-kahypar/datastructures/fixed_vertex_support.h"
-#include "mt-kahypar/datastructures/incident_net_array.h"
 #include "mt-kahypar/datastructures/contraction_tree.h"
+#include "mt-kahypar/datastructures/fixed_vertex_support.h"
+#include "mt-kahypar/datastructures/hypergraph_common.h"
+#include "mt-kahypar/datastructures/incident_net_array.h"
 #include "mt-kahypar/datastructures/thread_safe_fast_reset_flag_array.h"
 #include "mt-kahypar/parallel/stl/scalable_vector.h"
-#include "mt-kahypar/utils/memory_tree.h"
 #include "mt-kahypar/utils/exception.h"
+#include "mt-kahypar/utils/memory_tree.h"
 
 namespace mt_kahypar {
 namespace ds {
-
 // Forward
 class DynamicHypergraphFactory;
 template <typename Hypergraph,
@@ -57,7 +56,6 @@ template <typename Hypergraph,
 class PartitionedHypergraph;
 
 class DynamicHypergraph {
-
   static constexpr bool debug = false;
   static constexpr bool enable_heavy_assert = false;
 
@@ -70,7 +68,8 @@ class DynamicHypergraph {
   // ! hypergraph passes two lambda functions to the batch uncontraction function, one for
   // ! each case.
   using UncontractionFunction = std::function<void (const HypernodeID, const HypernodeID, const HyperedgeID)>;
-  #define NOOP_BATCH_FUNC [] (const HypernodeID, const HypernodeID, const HyperedgeID) { }
+  #define NOOP_BATCH_FUNC [] (const HypernodeID, const HypernodeID, const HyperedgeID) { \
+}
 
   /*!
   * This struct is used during multilevel coarsening to efficiently
@@ -240,7 +239,7 @@ class DynamicHypergraph {
       _weight = weight;
     }
 
-    size_t& hash() {
+    size_t & hash() {
       return _hash;
     }
 
@@ -374,16 +373,16 @@ class DynamicHypergraph {
   };
 
   struct PQElementComparator {
-    bool operator()(const PQBatchUncontractionElement& lhs, const PQBatchUncontractionElement& rhs){
-        return lhs._objective < rhs._objective;
+    bool operator() (const PQBatchUncontractionElement& lhs, const PQBatchUncontractionElement& rhs) {
+      return lhs._objective < rhs._objective;
     }
   };
 
   using IncidenceArray = Array<HypernodeID>;
-  using OwnershipVector = parallel::scalable_vector<parallel::IntegralAtomicWrapper<bool>>;
-  using ThreadLocalHyperedgeVector = tbb::enumerable_thread_specific<parallel::scalable_vector<HyperedgeID>>;
-  using ThreadLocalBitset = tbb::enumerable_thread_specific<kahypar::ds::FastResetFlagArray<>>;
-  using ThreadLocalBitvector = tbb::enumerable_thread_specific<parallel::scalable_vector<bool>>;
+  using OwnershipVector = parallel::scalable_vector<parallel::IntegralAtomicWrapper<bool> >;
+  using ThreadLocalHyperedgeVector = tbb::enumerable_thread_specific<parallel::scalable_vector<HyperedgeID> >;
+  using ThreadLocalBitset = tbb::enumerable_thread_specific<kahypar::ds::FastResetFlagArray<> >;
+  using ThreadLocalBitvector = tbb::enumerable_thread_specific<parallel::scalable_vector<bool> >;
 
  public:
   static constexpr bool is_graph = false;
@@ -435,7 +434,7 @@ class DynamicHypergraph {
     _fixed_vertices() { }
 
   DynamicHypergraph(const DynamicHypergraph&) = delete;
-  DynamicHypergraph & operator= (const DynamicHypergraph &) = delete;
+  DynamicHypergraph & operator= (const DynamicHypergraph&) = delete;
 
   DynamicHypergraph(DynamicHypergraph&& other) :
     _num_hypernodes(other._num_hypernodes),
@@ -553,38 +552,38 @@ class DynamicHypergraph {
 
   // ! Iterates in parallel over all active nodes and calls function f
   // ! for each vertex
-  template<typename F>
+  template <typename F>
   void doParallelForAllNodes(const F& f) {
     static_cast<const DynamicHypergraph&>(*this).doParallelForAllNodes(f);
   }
 
   // ! Iterates in parallel over all active nodes and calls function f
   // ! for each vertex
-  template<typename F>
+  template <typename F>
   void doParallelForAllNodes(const F& f) const {
     tbb::parallel_for(ID(0), _num_hypernodes, [&](const HypernodeID& hn) {
-      if ( nodeIsEnabled(hn) ) {
-        f(hn);
-      }
-    });
+          if (nodeIsEnabled(hn)) {
+            f(hn);
+          }
+        });
   }
 
   // ! Iterates in parallel over all active edges and calls function f
   // ! for each net
-  template<typename F>
+  template <typename F>
   void doParallelForAllEdges(const F& f) {
     static_cast<const DynamicHypergraph&>(*this).doParallelForAllEdges(f);
   }
 
   // ! Iterates in parallel over all active edges and calls function f
   // ! for each net
-  template<typename F>
+  template <typename F>
   void doParallelForAllEdges(const F& f) const {
     tbb::parallel_for(ID(0), _num_hyperedges, [&](const HyperedgeID& he) {
-      if ( edgeIsEnabled(he) ) {
-        f(he);
-      }
-    });
+          if (edgeIsEnabled(he)) {
+            f(he);
+          }
+        });
   }
 
   // ! Returns a range of the active nodes of the hypergraph
@@ -636,12 +635,18 @@ class DynamicHypergraph {
     return _incident_nets.nodeDegree(u);
   }
 
-    // ! Strength of a vertex
-    HypernodeWeight nodeStrength(const HypernodeID u) const {
-        throw NonSupportedOperationException(
-                "nodeStrength() is not supported in dynamic hypergraph");
-        return -1;
-    }
+  // ! Strength of a vertex
+  double nodeStrength(const HypernodeID u) const {
+    throw NonSupportedOperationException(
+            "nodeStrength() is not supported in dynamic hypergraph");
+    return 0.0;
+  }
+
+  double getNodeStrength(const HypernodeID pin, const HyperedgeID e) const {
+    throw NonSupportedOperationException(
+            "getNodeStrength() is not supported in dynamic hypergraph");
+    return 0.0;
+  }
 
   // ! Returns, whether a hypernode is enabled or not
   bool nodeIsEnabled(const HypernodeID u) const {
@@ -698,12 +703,12 @@ class DynamicHypergraph {
     return hyperedge(e).size();
   }
 
-    // ! Number of pins of a hyperedge at top level
-    HypernodeID edgeStrength(const HyperedgeID e) const {
-        throw NonSupportedOperationException(
-                "edgeStrength(e) is not supported for dynamic hypergraph");
-        return kInvalidHypernode;
-    }
+  // ! Number of pins of a hyperedge at top level
+  HypernodeID edgeStrength(const HyperedgeID e) const {
+    throw NonSupportedOperationException(
+            "edgeStrength(e) is not supported for dynamic hypergraph");
+    return kInvalidHypernode;
+  }
 
   // ! Maximum size of a hyperedge
   HypernodeID maxEdgeSize() const {
@@ -752,7 +757,6 @@ class DynamicHypergraph {
             "setClusteringMode is not supported in dynamic hypergraph");
   }
 
-
   // ####################### Fixed Vertex Support #######################
 
   void addFixedVertexSupport(FixedVertexSupport<DynamicHypergraph>&& fixed_vertices) {
@@ -784,7 +788,7 @@ class DynamicHypergraph {
     _fixed_vertices.setMaxBlockWeight(max_block_weights);
   }
 
-  const FixedVertexSupport<DynamicHypergraph>& fixedVertexSupport() const {
+  const FixedVertexSupport<DynamicHypergraph> & fixedVertexSupport() const {
     return _fixed_vertices;
   }
 
@@ -797,7 +801,7 @@ class DynamicHypergraph {
   DynamicHypergraph contract(parallel::scalable_vector<HypernodeID>&, bool deterministic = false) {
     unused(deterministic);
     throw NonSupportedOperationException(
-      "contract(c, id) is not supported in dynamic hypergraph");
+            "contract(c, id) is not supported in dynamic hypergraph");
     return DynamicHypergraph();
   }
 
@@ -884,7 +888,7 @@ class DynamicHypergraph {
     ASSERT(edgeIsEnabled(he), "Hyperedge" << he << "is disabled");
     kahypar::ds::FastResetFlagArray<>& he_to_remove = _he_bitset.local();
     he_to_remove.set(he, true);
-    for ( const HypernodeID& pin : pins(he) ) {
+    for ( const HypernodeID& pin : pins(he)) {
       _incident_nets.removeIncidentNets(pin, he_to_remove);
     }
     ++_num_removed_hyperedges;
@@ -906,9 +910,9 @@ class DynamicHypergraph {
     kahypar::ds::FastResetFlagArray<>& he_to_remove = _he_bitset.local();
     he_to_remove.set(he, true);
     tbb::parallel_for(incidence_array_start, incidence_array_end, [&](const size_t pos) {
-      const HypernodeID pin = _incidence_array[pos];
-      _incident_nets.removeIncidentNets(pin, he_to_remove);
-    });
+          const HypernodeID pin = _incidence_array[pos];
+          _incident_nets.removeIncidentNets(pin, he_to_remove);
+        });
     disableHyperedge(he);
   }
 
@@ -921,9 +925,9 @@ class DynamicHypergraph {
     const size_t incidence_array_start = hyperedge(he).firstEntry();
     const size_t incidence_array_end = hyperedge(he).firstInvalidEntry();
     tbb::parallel_for(incidence_array_start, incidence_array_end, [&](const size_t pos) {
-      const HypernodeID pin = _incidence_array[pos];
-      _incident_nets.restoreIncidentNets(pin);
-    });
+          const HypernodeID pin = _incidence_array[pos];
+          _incident_nets.restoreIncidentNets(pin);
+        });
   }
 
   /**
@@ -945,9 +949,8 @@ class DynamicHypergraph {
   void setCommunityIDs(const parallel::scalable_vector<PartitionID>& community_ids) {
     ASSERT(community_ids.size() == UI64(_num_hypernodes));
     doParallelForAllNodes([&](const HypernodeID& hn) {
-      hypernode(hn).setCommunityID(community_ids[hn]);
-    });
-
+          hypernode(hn).setCommunityID(community_ids[hn]);
+        });
   }
 
   // ####################### Copy #######################
@@ -973,7 +976,7 @@ class DynamicHypergraph {
 
   void freeTmpContractionBuffer() {
     throw NonSupportedOperationException(
-      "freeTmpContractionBuffer() is not supported in dynamic hypergraph");
+            "freeTmpContractionBuffer() is not supported in dynamic hypergraph");
   }
 
   void memoryConsumption(utils::MemoryTreeNode* parent) const;
@@ -983,7 +986,7 @@ class DynamicHypergraph {
 
  private:
   friend class DynamicHypergraphFactory;
-  template<typename Hypergraph>
+  template <typename Hypergraph>
   friend class CommunitySupport;
   template <typename Hypergraph,
             typename ConnectivityInformation>
@@ -995,7 +998,7 @@ class DynamicHypergraph {
     ASSERT(u < _num_hypernodes, "Hypernode" << u << "does not exist");
     bool expected = false;
     bool desired = true;
-    while ( !_acquired_hns[u].compare_exchange_strong(expected, desired) ) {
+    while (!_acquired_hns[u].compare_exchange_strong(expected, desired)) {
       expected = false;
     }
   }
@@ -1017,7 +1020,7 @@ class DynamicHypergraph {
     ASSERT(e < _num_hyperedges, "Hyperedge" << e << "does not exist");
     bool expected = false;
     bool desired = true;
-    while ( !_acquired_hes[e].compare_exchange_strong(expected, desired) ) {
+    while (!_acquired_hes[e].compare_exchange_strong(expected, desired)) {
       expected = false;
     }
   }
@@ -1038,13 +1041,13 @@ class DynamicHypergraph {
   // ####################### Hypernode Information #######################
 
   // ! Accessor for hypernode-related information
-  MT_KAHYPAR_ATTRIBUTE_ALWAYS_INLINE const Hypernode& hypernode(const HypernodeID u) const {
+  MT_KAHYPAR_ATTRIBUTE_ALWAYS_INLINE const Hypernode & hypernode(const HypernodeID u) const {
     ASSERT(u <= _num_hypernodes, "Hypernode" << u << "does not exist");
     return _hypernodes[u];
   }
 
   // ! To avoid code duplication we implement non-const version in terms of const version
-  MT_KAHYPAR_ATTRIBUTE_ALWAYS_INLINE Hypernode& hypernode(const HypernodeID u) {
+  MT_KAHYPAR_ATTRIBUTE_ALWAYS_INLINE Hypernode & hypernode(const HypernodeID u) {
     return const_cast<Hypernode&>(static_cast<const DynamicHypergraph&>(*this).hypernode(u));
   }
 
@@ -1056,13 +1059,13 @@ class DynamicHypergraph {
   // ####################### Hyperedge Information #######################
 
   // ! Accessor for hyperedge-related information
-  MT_KAHYPAR_ATTRIBUTE_ALWAYS_INLINE const Hyperedge& hyperedge(const HyperedgeID e) const {
+  MT_KAHYPAR_ATTRIBUTE_ALWAYS_INLINE const Hyperedge & hyperedge(const HyperedgeID e) const {
     ASSERT(e <= _num_hyperedges, "Hyperedge" << e << "does not exist");
     return _hyperedges[e];
   }
 
   // ! To avoid code duplication we implement non-const version in terms of const version
-  MT_KAHYPAR_ATTRIBUTE_ALWAYS_INLINE Hyperedge& hyperedge(const HyperedgeID e) {
+  MT_KAHYPAR_ATTRIBUTE_ALWAYS_INLINE Hyperedge & hyperedge(const HyperedgeID e) {
     return const_cast<Hyperedge&>(static_cast<const DynamicHypergraph&>(*this).hyperedge(e));
   }
 
@@ -1163,7 +1166,6 @@ class DynamicHypergraph {
   // ! Atomic bool vector used to acquire unique ownership of hypernodes
   OwnershipVector _acquired_hns;
 
-
   // ! Hyperedges
   Array<Hyperedge> _hyperedges;
   // ! Incident nets of hypernodes
@@ -1183,6 +1185,5 @@ class DynamicHypergraph {
   // ! Fixed Vertex Support
   FixedVertexSupport<DynamicHypergraph> _fixed_vertices;
 };
-
 } // namespace ds
 } // namespace mt_kahypar

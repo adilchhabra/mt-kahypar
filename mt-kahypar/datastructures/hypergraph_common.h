@@ -32,14 +32,13 @@
 
 #include "include/libmtkahypartypes.h"
 
-#include "mt-kahypar/parallel/stl/scalable_vector.h"
-#include "mt-kahypar/parallel/hardware_topology.h"
-#include "mt-kahypar/parallel/tbb_initializer.h"
-#include "mt-kahypar/parallel/atomic_wrapper.h"
 #include "mt-kahypar/datastructures/array.h"
+#include "mt-kahypar/parallel/atomic_wrapper.h"
+#include "mt-kahypar/parallel/hardware_topology.h"
+#include "mt-kahypar/parallel/stl/scalable_vector.h"
+#include "mt-kahypar/parallel/tbb_initializer.h"
 
 namespace mt_kahypar {
-
 using HardwareTopology = mt_kahypar::parallel::HardwareTopology<>;
 using TBBInitializer = mt_kahypar::parallel::TBBInitializer<HardwareTopology, false>;
 
@@ -89,7 +88,7 @@ static constexpr HypernodeID invalidNode = std::numeric_limits<HypernodeID>::max
 static constexpr Gain invalidGain = std::numeric_limits<Gain>::min();
 
 namespace ds {
-  using Clustering = vec<PartitionID>;
+using Clustering = vec<PartitionID>;
 }
 
 struct Move {
@@ -112,7 +111,7 @@ struct Memento {
   HypernodeID v; // contraction partner
 };
 
-template<typename Hypergraph>
+template <typename Hypergraph>
 struct ExtractedHypergraph {
   Hypergraph hg;
   vec<HypernodeID> hn_mapping;
@@ -157,54 +156,55 @@ struct SynchronizedEdgeUpdate {
   HyperedgeID m = kInvalidHyperedge;
   HyperedgeID hn_degree = kInvalidHyperedge;
   HypernodeWeight hn_weight = kInvalidPartition;
+  HypernodeWeight weight_From = kInvalidPartition;
   HypernodeID edge_strength = 0;
-  //HypernodeWeight edge_weight_from_nodes = kInvalidPartition;
+  // HypernodeWeight edge_weight_from_nodes = kInvalidPartition;
   double edge_weight_from_nodes = kInvalidPartition;
   double loyalty_towards_to_part = 0;
   double loyalty_towards_from_part = 0;
   double vol_To = 0;
   double vol_From = 0;
   double hn_strength = 0;
+  double hn_loyalty = 0;
 };
 
 struct NoOpDeltaFunc {
-  void operator() (const SynchronizedEdgeUpdate&) { }
+  void operator() (const SynchronizedEdgeUpdate&) {
+  }
 };
 
-template<typename Hypergraph, typename ConInfo>
+template <typename Hypergraph, typename ConInfo>
 struct PartitionedHypergraphType {
   static constexpr mt_kahypar_partition_type_t TYPE = NULLPTR_PARTITION;
 };
 
-template<>
+template <>
 struct PartitionedHypergraphType<ds::StaticHypergraph, ds::ConnectivityInfo> {
   static constexpr mt_kahypar_partition_type_t TYPE = MULTILEVEL_HYPERGRAPH_PARTITIONING;
 };
 
-template<>
+template <>
 struct PartitionedHypergraphType<ds::StaticHypergraph, ds::SparseConnectivityInfo> {
   static constexpr mt_kahypar_partition_type_t TYPE = LARGE_K_PARTITIONING;
 };
 
-template<>
+template <>
 struct PartitionedHypergraphType<ds::DynamicHypergraph, ds::ConnectivityInfo> {
   static constexpr mt_kahypar_partition_type_t TYPE = N_LEVEL_HYPERGRAPH_PARTITIONING;
 };
 
-template<typename Graph>
+template <typename Graph>
 struct PartitionedGraphType {
   static constexpr mt_kahypar_partition_type_t TYPE = NULLPTR_PARTITION;
 };
 
-template<>
+template <>
 struct PartitionedGraphType<ds::StaticGraph> {
   static constexpr mt_kahypar_partition_type_t TYPE = MULTILEVEL_GRAPH_PARTITIONING;
 };
 
-template<>
+template <>
 struct PartitionedGraphType<ds::DynamicGraph> {
   static constexpr mt_kahypar_partition_type_t TYPE = N_LEVEL_GRAPH_PARTITIONING;
 };
-
-
 } // namespace mt_kahypar
