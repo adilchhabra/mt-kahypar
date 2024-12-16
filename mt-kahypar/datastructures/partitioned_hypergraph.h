@@ -626,7 +626,7 @@ class PartitionedHypergraph {
                       const bool force_moving_fixed_vertices = false) {
     unused(force_moving_fixed_vertices);
     ASSERT(partID(u) == from);
-    ASSERT(from == to);
+    ASSERT(from != to);
     ASSERT(force_moving_fixed_vertices || !isFixed(u));
     const HypernodeWeight wu = nodeWeight(u);
     const HypernodeWeight to_weight_after = _part_weights[to].add_fetch(wu, std::memory_order_relaxed);
@@ -634,7 +634,8 @@ class PartitionedHypergraph {
     double old_to_volume = _part_volumes[to];
     const HyperedgeID to_degree_after = _part_volumes[to].add_fetch(su, std::memory_order_relaxed);
     double new_to_volume = _part_volumes[to];
-    ASSERT(new_to_volume - old_to_volume == su); // adil clustering assert
+    //LOG << "su = " << su << "; old to vol = " << old_to_volume << "; new to vol = " << new_to_volume; 
+    ASSERT((std::abs((new_to_volume - old_to_volume) - su)) < 0.1); // adil clustering assert
     // _part_volumes[to]+=(parallel::AtomicWrapper<double>(du));
 //    _part_volumes[to]+=du;
     if (to_weight_after <= max_weight_to) {
@@ -643,7 +644,7 @@ class PartitionedHypergraph {
       _part_weights[from].fetch_sub(wu, std::memory_order_relaxed);
       _part_volumes[from].fetch_sub(su, std::memory_order_relaxed);
       double new_from_volume = _part_volumes[from];
-      ASSERT(old_from_volume - new_from_volume = su); // adil clustering assert
+      ASSERT((std::abs((old_from_volume - new_from_volume) - su)) < 0.1); // adil clustering assert
       // _part_volumes[from]-=(parallel::AtomicWrapper<double>(du));
 //      _part_volumes[from]-=du;
       report_success();

@@ -232,7 +232,7 @@ class MultilevelVertexPairRater {
       kahypar::ds::FastResetFlagArray<>& bloom_filter = _local_bloom_filter.local();
       for ( const HyperedgeID& he : hypergraph.incidentEdges(u) ) {
         HypernodeID edge_size = hypergraph.edgeSize(he);
-        ASSERT(edge_size > 1, V(he));
+        ASSERT(edge_size > 0, V(he)); //adil clustering todo currently changed to >0 instead of >1 to allow self loops
         if ( edge_size < _context.partition.ignore_hyperedge_size_threshold ) {
           edge_size = _context.coarsening.use_adaptive_edge_size ?
             std::max(adaptiveEdgeSize(hypergraph, he, bloom_filter, cluster_ids), ID(2)) : edge_size;

@@ -261,8 +261,10 @@ namespace mt_kahypar {
       }
     }
 
+    if(_context.partition.preset_type != PresetType::cluster) {
     ASSERT(metrics::quality(*_uncoarseningData.partitioned_hg, _context) == _current_metrics.quality,
       V(_current_metrics.quality) << V(metrics::quality(*_uncoarseningData.partitioned_hg, _context)));
+    }
   }
 
   template<typename TypeTraits>

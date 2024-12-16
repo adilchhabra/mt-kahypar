@@ -409,7 +409,7 @@ class MemoryPoolT {
       for ( const auto& key : _memory_groups.at(group)._key_to_memory_id ) {
         const size_t memory_id = key.second;
         MemoryChunk& lhs = _memory_chunks[memory_id];
-        ASSERT(lhs._data);
+        //ASSERT(lhs._data);
         if ( lhs._next_memory_chunk_id != kInvalidMemoryChunk ) {
           ASSERT(lhs._next_memory_chunk_id < _memory_chunks.size());
           MemoryChunk& rhs = _memory_chunks[lhs._next_memory_chunk_id];

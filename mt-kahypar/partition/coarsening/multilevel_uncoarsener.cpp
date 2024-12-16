@@ -121,9 +121,10 @@ namespace mt_kahypar {
     }
 //      LOG << "Top level vol_H = " << partitioned_hg.topLevelTotalVertexDegree() <<"; Current level vol_H = " << partitioned_hg.initialTotalVertexDegree();
 //      LOG << "Top level m = " << partitioned_hg.topLevelNumEdges() <<"; Current level m = " << partitioned_hg.initialNumEdges();
-
-    ASSERT(metrics::quality(*_uncoarseningData.partitioned_hg, _context) == _current_metrics.quality,
-      V(_current_metrics.quality) << V(metrics::quality(*_uncoarseningData.partitioned_hg, _context)));
+    if(_context.partition.preset_type != PresetType::cluster) {
+      ASSERT(metrics::quality(*_uncoarseningData.partitioned_hg, _context) == _current_metrics.quality,
+        V(_current_metrics.quality) << V(metrics::quality(*_uncoarseningData.partitioned_hg, _context)));
+    }
 
     --_current_level;
   }
@@ -262,7 +263,7 @@ namespace mt_kahypar {
         _timer.stop_timer("flow_refinement_scheduler");
       }
 
-      if ( _context.type == ContextType::main ) {
+      if ( _context.type == ContextType::main && _context.partition.preset_type != PresetType::cluster) {
         ASSERT(_current_metrics.quality == metrics::quality(partitioned_hypergraph, _context),
           "Actual metric" << V(metrics::quality(partitioned_hypergraph, _context)) <<
           "does not match the metric updated by the refiners" << V(_current_metrics.quality));

@@ -517,7 +517,7 @@ class InitialPartitioningDataContainer {
         _pop_lock.unlock();
       }
     } else {
-      if (my_ip_data._result.is_other_better(my_result, eps)) {
+      if (my_ip_data._result.is_other_better(my_result, eps) || _context.partition.preset_type == PresetType::cluster) { //adil:: clustering todo change
         my_ip_data._result = my_result;
         my_ip_data.copyPartition(my_ip_data._partition);
       }
@@ -653,6 +653,7 @@ class InitialPartitioningDataContainer {
       _partitioned_hg.doParallelForAllNodes([&](const HypernodeID hn) {
         ASSERT(hn < best->_partition.size());
         const PartitionID part_id = best->_partition[hn];
+        // LOG << "Node " << hn << " gets part ID " << part_id << " which is allowed since k = " << _partitioned_hg.k();
         ASSERT(part_id != kInvalidPartition && part_id < _partitioned_hg.k());
         ASSERT(_partitioned_hg.partID(hn) == kInvalidPartition);
         _partitioned_hg.setOnlyNodePart(hn, part_id);

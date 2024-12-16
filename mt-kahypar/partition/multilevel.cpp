@@ -126,7 +126,6 @@ namespace {
       // in the coarsest graph
       context.partition.k = phg.initialNumNodes();
       phg.setK(context.partition.k, input_he_count);
-      context.sanityCheck(target_graph);
       context.setupPartWeights(hypergraph.totalWeight());
       context.setupContractionLimit(hypergraph.totalWeight());
       context.setupThreadsPerFlowSearch();

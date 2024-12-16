@@ -40,9 +40,11 @@ void SingletonInitialPartitioner<TypeTraits>::partitionImpl() {
       PartitionedHypergraph& hg = _ip_data.local_partitioned_hypergraph();
 
       if(hg.initialNumNodes() == static_cast<HypernodeID>(_context.partition.k)) {
+        PartitionID cur_block = 0;
           for (const HypernodeID &hn: hg.nodes()) {
-              PartitionID singleton_block = static_cast<PartitionID>(hn); // adil: potential out of bounds
-              hg.setNodePart(hn, singleton_block);
+              //PartitionID singleton_block = static_cast<PartitionID>(hn); // adil: potential out of bounds
+            //   LOG << "IP: Node " << hn << " gets block = " << cur_block;
+              hg.setNodePart(hn, cur_block++);
           }
       } else {
           std::uniform_int_distribution<PartitionID> select_random_block(0, _context.partition.k - 1);
