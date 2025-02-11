@@ -59,7 +59,7 @@ class PiModGainComputation : public GainComputationBase<PiModGainComputation, Pi
     ASSERT(tmp_scores.size() == 0, "Rating map not empty");
     // currently assigned cluster of the hypernode hn
     PartitionID from = phg.partID(hn);
-//    LOG << "For node "<< hn << " in cluster " << from;
+    // LOG << "For node "<< hn << " in cluster " << from;
     // we want to compute the gain of moving the node out of the current cluster and
     // in to a neighboring cluster
 
@@ -143,7 +143,7 @@ class PiModGainComputation : public GainComputationBase<PiModGainComputation, Pi
         double net_change_in_pi_modularity = change_in_pi_modularity_u_to_C + change_in_pi_modularity_u_from_C;
 //          LOG << "Node " << hn << " has strength = " << phg.nodeStrength(hn) << " and cluster " << clusterID
 //          << " has strength = " << phg.partVolume(clusterID);
-        tmp_scores[clusterID] = static_cast<HyperedgeWeight>(std::floor(net_change_in_pi_modularity * 10000000));
+        tmp_scores[clusterID] = static_cast<HyperedgeWeight>(std::floor(net_change_in_pi_modularity * 100000));
         // LOG << "Node " << hn << " to cluster " << clusterID << " has pi_mod gain " << net_change_in_pi_modularity
         //     << " with from = " << change_in_pi_modularity_u_from_C <<
         //   " and to = " << change_in_pi_modularity_u_to_C;
@@ -205,7 +205,7 @@ class PiModGainComputation : public GainComputationBase<PiModGainComputation, Pi
                        PartitionID old_cluster,
                        double delta_supt_C) {
     // this function returns the change in modularity on moving hn to new_cluster
-//        LOG << "Computing deltaPI for node " << hn << " out from cluster " << old_cluster;
+    // LOG << "Computing deltaPI for node " << hn << " out from cluster " << old_cluster;
     auto vol_H = static_cast<double>(phg.initialTotalVertexDegree());
     auto m = static_cast<double>(phg.initialNumEdges());
 

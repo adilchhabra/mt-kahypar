@@ -108,8 +108,8 @@ class PartitionedHypergraph {
     _hg(&hypergraph),
     _target_graph(nullptr),
     _part_weights(k, CAtomic<HypernodeWeight>(0)),
-//    _part_volumes(k, CAtomic<double>(0)),
-    _part_volumes(k, parallel::AtomicWrapper<double>(0)),
+    _part_volumes(k, CAtomic<double>(0)),
+    //_part_volumes(k, parallel::AtomicWrapper<double>(0)),
     // _part_volumes(k,0.0),
     _part_ids(
       "Refinement", "part_ids", hypergraph.initialNumNodes(), false, false),
@@ -129,8 +129,8 @@ class PartitionedHypergraph {
     _hg(&hypergraph),
     _target_graph(nullptr),
     _part_weights(k, CAtomic<HypernodeWeight>(0)),
-//    _part_volumes(k, CAtomic<double>(0)),
-    _part_volumes(k, parallel::AtomicWrapper<double>(0)),
+    _part_volumes(k, CAtomic<double>(0)),
+    //_part_volumes(k, parallel::AtomicWrapper<double>(0)),
 //    _part_volumes(k, 0.0),
     _part_ids(),
     _con_info(),
@@ -187,8 +187,8 @@ class PartitionedHypergraph {
   void setK(PartitionID k, HyperedgeID init_num_hyperedges) {
     _k = k;
     _part_weights.assign(k, CAtomic<HypernodeWeight>(0));
-//      _part_volumes.assign(k,CAtomic<double>(0));
-    _part_volumes.assign(k, parallel::AtomicWrapper<double>(0));
+    _part_volumes.assign(k, CAtomic<double>(0));
+    //_part_volumes.assign(k, parallel::AtomicWrapper<double>(0));
 //      _part_volumes.assign(k,0.0);
     tbb::parallel_invoke([&] { }, [&] {
           _con_info.reset();
@@ -1395,7 +1395,8 @@ class PartitionedHypergraph {
   Array<SpinLock> _pin_count_update_ownership;
 
   // ! Volume and information for all blocks.
-  vec<parallel::AtomicWrapper<double> > _part_volumes;
+  vec<CAtomic<double> > _part_volumes;
+  //vec<parallel::AtomicWrapper<double> > _part_volumes;
   // std::vector< double > _part_volumes;
 };
 } // namespace ds
