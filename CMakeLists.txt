@@ -13,6 +13,24 @@ set(PROJECT_DESCRIPTION "Mt-KaHyPar: Multi-Threaded Karlsruhe Hypergraph Partiti
 set(PROJECT_VERSION "1.0.0")
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
+include(CheckCXXSourceCompiles)
+set(CMAKE_REQUIRED_FLAGS "-std=c++20")
+check_cxx_source_compiles("
+  #include <atomic>
+  int main() {
+    std::atomic<double> a(0.0);
+    a.fetch_add(1.0);
+    return 0;
+  }
+" SUPPORTS_ATOMIC_DOUBLE_FETCH_ADD)
+
+if(SUPPORTS_ATOMIC_DOUBLE_FETCH_ADD)
+  message(STATUS "Your compiler and standard library support std::atomic<double>::fetch_add")
+else()
+  message(FATAL_ERROR "Your compiler or standard library do not support std::atomic<double>::fetch_add.
+  Consider updating your compiler or using a compare‐exchange loop workaround.")
+endif()
+
 # CMake Options
 
 option(KAHYPAR_DOWNLOAD_BOOST
