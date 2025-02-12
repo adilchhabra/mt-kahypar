@@ -76,7 +76,7 @@ bool LabelPropagationRefiner<GraphAndGainTypes>::moveVertex(PartitionedHypergrap
         // the solution quality.
 
         Gain move_delta = _gain.localDelta() - delta_before;
-
+        ASSERT(std::abs(move_delta - best_move.gain) <= 1000)
         bool accept_move = (move_delta == best_move.gain || move_delta <= 0);
         if (accept_move) {
           //HyperedgeWeight new_pi_mod = metrics::quality(hypergraph, _context);

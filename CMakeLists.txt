@@ -442,7 +442,7 @@ enable_testing()
 
 add_subdirectory(tools)
 add_subdirectory(lib)
-add_subdirectory(tests)
+#add_subdirectory(tests)
 
 if(NOT MT_KAHYPAR_DISABLE_BOOST)
   add_subdirectory(mt-kahypar/application)

@@ -56,7 +56,7 @@ namespace mt_kahypar {
       context.partition.k = target_graph->numBlocks();
     } else if (context.partition.preset_type == PresetType::cluster) {
         context.partition.epsilon = std::numeric_limits<double>::max();
-        context.partition.k = 2; // adil set default k for clustering manually here
+        context.partition.k = 32; // adil set default k for clustering manually here
         // this determines how the part weights and contraction limits are defined
     }
 

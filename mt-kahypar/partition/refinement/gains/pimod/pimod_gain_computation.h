@@ -122,6 +122,7 @@ class PiModGainComputation : public GainComputationBase<PiModGainComputation, Pi
       }
     }
 
+
     ASSERT(total_self_loop_count < 2);
 
     // compute pi modularity change if the hypernode is removed from its current cluster
@@ -143,7 +144,7 @@ class PiModGainComputation : public GainComputationBase<PiModGainComputation, Pi
         double net_change_in_pi_modularity = change_in_pi_modularity_u_to_C + change_in_pi_modularity_u_from_C;
 //          LOG << "Node " << hn << " has strength = " << phg.nodeStrength(hn) << " and cluster " << clusterID
 //          << " has strength = " << phg.partVolume(clusterID);
-        tmp_scores[clusterID] = static_cast<HyperedgeWeight>(std::floor(net_change_in_pi_modularity * 100000));
+        tmp_scores[clusterID] = static_cast<HyperedgeWeight>(std::floor(net_change_in_pi_modularity * 10000000));
         // LOG << "Node " << hn << " to cluster " << clusterID << " has pi_mod gain " << net_change_in_pi_modularity
         //     << " with from = " << change_in_pi_modularity_u_from_C <<
         //   " and to = " << change_in_pi_modularity_u_to_C;
