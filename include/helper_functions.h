@@ -42,6 +42,7 @@ bool check_compatibility(mt_kahypar_hypergraph_t hypergraph,
     case DEFAULT:
     case QUALITY:
     case DETERMINISTIC:
+    case CLUSTER:
     case LARGE_K:
       return hypergraph.type == STATIC_GRAPH || hypergraph.type == STATIC_HYPERGRAPH;
     case HIGHEST_QUALITY:

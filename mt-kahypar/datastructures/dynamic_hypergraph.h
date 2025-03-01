@@ -636,15 +636,16 @@ class DynamicHypergraph {
   }
 
   // ! Strength of a vertex
-  double nodeStrength(const HypernodeID u) const {
+  double nodeStrength(const HypernodeID) const {
     throw NonSupportedOperationException(
-            "nodeStrength() is not supported in dynamic hypergraph");
+            "nodeStrength(u) is not supported in dynamic hypergraph");
     return 0.0;
   }
 
-  double getNodeStrength(const HypernodeID pin, const HyperedgeID e) const {
+  // ! Strength of a pin for the corresponding hyperedge
+  double getNodeStrength(const HypernodeID, const HyperedgeID) const {
     throw NonSupportedOperationException(
-            "getNodeStrength() is not supported in dynamic hypergraph");
+            "getNodeStrength(pin,e) is not supported in dynamic hypergraph");
     return 0.0;
   }
 
@@ -703,8 +704,8 @@ class DynamicHypergraph {
     return hyperedge(e).size();
   }
 
-  // ! Number of pins of a hyperedge at top level
-  HypernodeID edgeStrength(const HyperedgeID e) const {
+  // ! Strength a hyperedge at top level
+  HypernodeID edgeStrength(const HyperedgeID) const {
     throw NonSupportedOperationException(
             "edgeStrength(e) is not supported for dynamic hypergraph");
     return kInvalidHypernode;
@@ -752,7 +753,7 @@ class DynamicHypergraph {
     return hypernode(u).setCommunityID(community_id);
   }
 
-  void setClusteringMode(const bool to_set) {
+  void setClusteringMode(const bool) {
     throw NonSupportedOperationException(
             "setClusteringMode is not supported in dynamic hypergraph");
   }

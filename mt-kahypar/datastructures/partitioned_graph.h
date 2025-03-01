@@ -413,15 +413,15 @@ class PartitionedGraph {
   }
 
   // ! Strength of a hypernode
-  double nodeStrength(const HypernodeID u) const {
+  double nodeStrength(const HypernodeID) const {
     throw NonSupportedOperationException(
             "nodeStrength(u) is only supported on hypergraph data structure");
     return 0.0;
   }
 
-  double getNodeStrength(const HypernodeID pin, const HyperedgeID e) const {
+  double getNodeStrength(const HypernodeID, const HyperedgeID) const {
     throw NonSupportedOperationException(
-            "getNodeStrength(u,e) is only supported on hypergraph data structure");
+            "getNodeStrength(pin,e) is only supported on hypergraph data structure");
     return 0.0;
   }
 
@@ -474,7 +474,7 @@ class PartitionedGraph {
   }
 
   // ! Number of pins of a hyperedge at top level
-  HypernodeID edgeStrength(const HyperedgeID e) const {
+  HypernodeID edgeStrength(const HyperedgeID) const {
     throw NonSupportedOperationException(
             "edgeStrength(e) is not supported for partitioned graph");
     return kInvalidHypernode;

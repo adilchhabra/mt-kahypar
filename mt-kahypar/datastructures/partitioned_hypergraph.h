@@ -109,8 +109,6 @@ class PartitionedHypergraph {
     _target_graph(nullptr),
     _part_weights(k, CAtomic<HypernodeWeight>(0)),
     _part_volumes(k, CAtomic<double>(0)),
-    //_part_volumes(k, parallel::AtomicWrapper<double>(0)),
-    // _part_volumes(k,0.0),
     _part_ids(
       "Refinement", "part_ids", hypergraph.initialNumNodes(), false, false),
     _con_info(hypergraph.initialNumEdges(), k, hypergraph.maxEdgeSize()),
@@ -130,8 +128,6 @@ class PartitionedHypergraph {
     _target_graph(nullptr),
     _part_weights(k, CAtomic<HypernodeWeight>(0)),
     _part_volumes(k, CAtomic<double>(0)),
-    //_part_volumes(k, parallel::AtomicWrapper<double>(0)),
-//    _part_volumes(k, 0.0),
     _part_ids(),
     _con_info(),
     _pin_count_update_ownership() {
@@ -630,11 +626,12 @@ class PartitionedHypergraph {
     const HypernodeWeight to_weight_after = _part_weights[to].add_fetch(wu, std::memory_order_relaxed);
     const double su = nodeStrength(u);
     double old_to_volume = _part_volumes[to];
-    const HyperedgeID to_degree_after = _part_volumes[to].add_fetch(su, std::memory_order_relaxed);
+    const double to_degree_after = _part_volumes[to].add_fetch(su, std::memory_order_relaxed);
     double new_to_volume = _part_volumes[to];
     //ADIL TEST 2: for volume fetch add for doubles with upgrade to C++
     //LOG << "su = " << su << "; old to vol = " << old_to_volume << "; new to vol = " << new_to_volume; 
     //ASSERT((std::abs((new_to_volume - old_to_volume) - su)) < 0.1); 
+    ASSERT(to_degree_after >= 0.0);
     if((std::abs((new_to_volume - old_to_volume) - su)) >= 0.1) {
       LOG << RED << "Volume fetch add failure" << WHITE;
     }
@@ -1425,6 +1422,9 @@ class PartitionedHypergraph {
   // ! Weight and information for all blocks.
   vec<CAtomic<HypernodeWeight> > _part_weights;
 
+  // ! Volume and information for all blocks.
+  vec<CAtomic<double> > _part_volumes;
+
   // ! Current block IDs of the vertices
   Array<PartitionID> _part_ids;
 
@@ -1434,11 +1434,6 @@ class PartitionedHypergraph {
   // ! In order to update the pin count of a hyperedge thread-safe, a thread must acquire
   // ! the ownership of a hyperedge via a CAS operation.
   Array<SpinLock> _pin_count_update_ownership;
-
-  // ! Volume and information for all blocks.
-  vec<CAtomic<double> > _part_volumes;
-  //vec<parallel::AtomicWrapper<double> > _part_volumes;
-  // std::vector< double > _part_volumes;
 };
 } // namespace ds
 } // namespace mt_kahypar

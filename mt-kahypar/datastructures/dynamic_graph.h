@@ -511,12 +511,12 @@ class DynamicGraph {
     return _adjacency_array.nodeDegree(u);
   }
 
-    // ! Strength of a vertex
-    HypernodeWeight nodeStrength(const HypernodeID u) const {
-        throw NonSupportedOperationException(
-                "nodeStrength() is not supported in dynamic graph");
-        return -1;
-    }
+  // ! Strength of a vertex
+  HypernodeWeight nodeStrength(const HypernodeID) const {
+      throw NonSupportedOperationException(
+              "nodeStrength(u) is not supported in dynamic graph");
+      return -1;
+  }
 
   // ! Returns, whether a hypernode is enabled or not
   bool nodeIsEnabled(const HypernodeID u) const {
@@ -594,12 +594,12 @@ class DynamicGraph {
     return isSinglePin(e) ? 1 : 2;
   }
 
-    // ! Number of pins of a hyperedge at top level
-    HypernodeID edgeStrength(const HyperedgeID e) const {
-        throw NonSupportedOperationException(
-                "edgeStrength(e) is not supported for dynamic graph");
-        return kInvalidHypernode;
-    }
+  // ! Strength of a hyperedge at top level
+  HypernodeID edgeStrength(const HyperedgeID) const {
+      throw NonSupportedOperationException(
+              "edgeStrength(e) is not supported for dynamic graph");
+      return kInvalidHypernode;
+  }
 
   // ! Maximum size of a hyperedge
   HypernodeID maxEdgeSize() const {
@@ -653,7 +653,7 @@ class DynamicGraph {
     });
   }
 
-  void setClusteringMode(const bool to_set) {
+  void setClusteringMode(const bool) {
     throw NonSupportedOperationException(
             "setClusteringMode is not supported in dynamic graph");
   }

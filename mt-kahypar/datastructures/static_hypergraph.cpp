@@ -410,7 +410,7 @@ StaticHypergraph StaticHypergraph::contract(parallel::scalable_vector<HypernodeI
           HyperedgeWeight lhs_weight = tmp_hyperedges[lhs_he].weight();
           HypernodeID lhs_strength = tmp_hyperedges[lhs_he].strength(); // adil clustering
 
-          bool is_self_loop = (contracted_he_lhs.size == 1);
+//          bool is_self_loop = (contracted_he_lhs.size == 1);
 //            if (is_self_loop) {
 //                LOG << "Detected self-loop in hyperedge " << lhs_he
 //                    << " with weight: " << lhs_weight << " and strength: " << lhs_strength;

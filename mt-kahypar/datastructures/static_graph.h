@@ -626,12 +626,12 @@ class StaticGraph {
     return node(u + 1).firstEntry() - node(u).firstEntry();
   }
 
-    // ! Strength of a vertex
-    HypernodeWeight nodeStrength(const HypernodeID u) const {
-        throw NonSupportedOperationException(
-                "nodeStrength() is not supported in static graph");
-        return -1;
-    }
+  // ! Strength of a vertex
+  HypernodeWeight nodeStrength(const HypernodeID) const {
+      throw NonSupportedOperationException(
+              "nodeStrength(u) is not supported in static graph");
+      return -1;
+  }
 
   // ! Returns whether a hypernode is enabled or not
   bool nodeIsEnabled(const HypernodeID u) const {
@@ -697,12 +697,12 @@ class StaticGraph {
     return 2;
   }
 
-    // ! Number of pins of a hyperedge at top level
-    HypernodeID edgeStrength(const HyperedgeID e) const {
-        throw NonSupportedOperationException(
-                "edgeStrength(e) is not supported for static graph");
-        return kInvalidHypernode;
-    }
+  // ! Strength of hyperedge at top level
+  HypernodeID edgeStrength(const HyperedgeID) const {
+      throw NonSupportedOperationException(
+              "edgeStrength(e) is not supported for static graph");
+      return kInvalidHypernode;
+  }
 
   // ! Maximum size of a hyperedge
   HypernodeID maxEdgeSize() const {
@@ -857,7 +857,7 @@ class StaticGraph {
     });
   }
 
-  void setClusteringMode(const bool to_set) {
+  void setClusteringMode(const bool) {
      throw NonSupportedOperationException(
        "setClusteringMode is not supported in static graph");
   }
