@@ -124,7 +124,6 @@ StaticHypergraph StaticHypergraphFactory::construct(const HypernodeID num_hypern
           // Add hyperedge he as a incident net to pin
           const size_t incident_nets_pos = incident_net_prefix_sum[pin] + incident_nets_position[pin]++;
           // adil: Add hyperedge he strength to current pin strength
-          // hypergraph.hypernode(pin).addStrength(hyperedge.strength());
           hypergraph.hypernode(pin).addStrength(1.0 / pin_prefix_sum.value(pos));
           ASSERT(incident_nets_pos < incident_net_prefix_sum[pin + 1]);
           hypergraph._incident_nets[incident_nets_pos] = he;

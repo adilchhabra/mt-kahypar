@@ -170,7 +170,8 @@ struct PiModAttributedGains {
     // LOG << "ATT: Node " << sync_update.hn << " to cluster " << sync_update.to << " has pi_mod gain " <<
     //   change_in_pi_modularity << " with from = " << change_in_pi_modularity_u_from_From <<
     //   " and to = " << change_in_pi_modularity_u_to_To;
-    auto final = static_cast<HyperedgeWeight>(std::floor(change_in_pi_modularity * 10000000));
+    auto final = static_cast<HyperedgeWeight>(std::floor(change_in_pi_modularity * 1000000));
+    //auto final = change_in_pi_modularity;
     return -1* final;
   }
 };

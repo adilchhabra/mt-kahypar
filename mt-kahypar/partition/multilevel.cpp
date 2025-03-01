@@ -122,7 +122,7 @@ namespace {
     PartitionedHypergraph& phg = uncoarseningData.coarsestPartitionedHypergraph();
 
     if (context.partition.preset_type == PresetType::cluster) {
-      // for clustering IP, call singleton partitioner with k = no. hypernodes
+      // ADIL: for clustering IP, call singleton partitioner with k = no. hypernodes
       // in the coarsest graph
       context.partition.k = phg.initialNumNodes();
       phg.setK(context.partition.k, input_he_count);

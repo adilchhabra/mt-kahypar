@@ -34,10 +34,10 @@ endif()
 # CMake Options
 
 option(KAHYPAR_DOWNLOAD_BOOST
-  "Download boost automatically and compile required libraries." OFF)
+  "Download boost automatically and compile required libraries." ON)
 
 option(KAHYPAR_DOWNLOAD_TBB
-  "Download TBB automatically." OFF)
+  "Download TBB automatically." ON)
 
 option(KAHYPAR_ENFORCE_MINIMUM_TBB_VERSION
   "Enforces the minimum required TBB version." ON)

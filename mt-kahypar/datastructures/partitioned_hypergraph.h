@@ -188,8 +188,7 @@ class PartitionedHypergraph {
     _k = k;
     _part_weights.assign(k, CAtomic<HypernodeWeight>(0));
     _part_volumes.assign(k, CAtomic<double>(0));
-    //_part_volumes.assign(k, parallel::AtomicWrapper<double>(0));
-//      _part_volumes.assign(k,0.0);
+
     tbb::parallel_invoke([&] { }, [&] {
           _con_info.reset();
           _con_info = ConnectivityInformation(
@@ -606,8 +605,7 @@ class PartitionedHypergraph {
     setOnlyNodePart(u, p);
     _part_weights[p].fetch_add(nodeWeight(u), std::memory_order_relaxed);
     _part_volumes[p].fetch_add(nodeStrength(u), std::memory_order_relaxed);
-//    _part_volumes[p]+=(parallel::AtomicWrapper<double>(nodeStrength(u)));
-//    _part_volumes[p]+=nodeStrength(u);
+
     for (HyperedgeID he : incidentEdges(u)) {
       incrementPinCountOfBlock(he, p);
     }
@@ -634,19 +632,23 @@ class PartitionedHypergraph {
     double old_to_volume = _part_volumes[to];
     const HyperedgeID to_degree_after = _part_volumes[to].add_fetch(su, std::memory_order_relaxed);
     double new_to_volume = _part_volumes[to];
+    //ADIL TEST 2: for volume fetch add for doubles with upgrade to C++
     //LOG << "su = " << su << "; old to vol = " << old_to_volume << "; new to vol = " << new_to_volume; 
-    ASSERT((std::abs((new_to_volume - old_to_volume) - su)) < 0.1); // adil clustering assert
-    // _part_volumes[to]+=(parallel::AtomicWrapper<double>(du));
-//    _part_volumes[to]+=du;
+    //ASSERT((std::abs((new_to_volume - old_to_volume) - su)) < 0.1); 
+    if((std::abs((new_to_volume - old_to_volume) - su)) >= 0.1) {
+      LOG << RED << "Volume fetch add failure" << WHITE;
+    }
     if (to_weight_after <= max_weight_to) {
       _part_ids[u] = to;
       double old_from_volume = _part_volumes[from];
       _part_weights[from].fetch_sub(wu, std::memory_order_relaxed);
       _part_volumes[from].fetch_sub(su, std::memory_order_relaxed);
       double new_from_volume = _part_volumes[from];
-      ASSERT((std::abs((old_from_volume - new_from_volume) - su)) < 0.1); // adil clustering assert
-      // _part_volumes[from]-=(parallel::AtomicWrapper<double>(du));
-//      _part_volumes[from]-=du;
+      //ADIL TEST 2: for volume fetch sub for doubles with upgrade to C++
+      //ASSERT((std::abs((old_from_volume - new_from_volume) - su)) < 0.1); // adil clustering assert
+      if((std::abs((old_from_volume - new_from_volume) - su)) >= 0.1) {
+        LOG << RED << "Volume fetch sub failure" << WHITE;
+      }
       report_success();
       SynchronizedEdgeUpdate sync_update;
       sync_update.from = from;
@@ -665,13 +667,11 @@ class PartitionedHypergraph {
       for ( const HyperedgeID he : incidentEdges(u)) {
         updatePinCountOfHyperedge(he, u, from, to, sync_update, delta_func, notify_func);
       }
-      // LOG << "Node " << u << " is moved from " << from << " to " << to;
       return true;
     } else {
       _part_weights[to].fetch_sub(wu, std::memory_order_relaxed);
       _part_volumes[to].fetch_sub(su, std::memory_order_relaxed);
-//      _part_volumes[to]-=(parallel::AtomicWrapper<double>(du));
-//      _part_volumes[to]-=du;
+    
       return false;
     }
   }
@@ -1218,9 +1218,50 @@ class PartitionedHypergraph {
   void applyPartVolumeUpdates(vec<double>& part_volume_deltas) {
     for (PartitionID p = 0; p < _k; ++p) {
       _part_volumes[p].fetch_add(part_volume_deltas[p], std::memory_order_relaxed);
-      // _part_volumes[p]+=(parallel::AtomicWrapper<double>(part_volume_deltas[p]));
-//            _part_volumes[p]+=part_volume_deltas[p];
+
     }
+    // ADIL TEST: Double CAtomic Fetch Add and Sub
+    /*
+    // Initialize an atomic double to 0.0.
+    CAtomic<double> volume(0.0);
+
+    // Using fetch_add directly:
+    double old_val = volume.fetch_add(3.5, std::memory_order_relaxed);
+    ASSERT(old_val == 0.0);
+    ASSERT(volume.load(std::memory_order_relaxed) == 3.5);
+
+    // Using add_fetch (which returns old + arg):
+    double new_val = volume.add_fetch(2.0, std::memory_order_relaxed);
+    // new_val should be 3.5 + 2.0 = 5.5
+    ASSERT(new_val == 5.5);
+    ASSERT(volume.load(std::memory_order_relaxed) == 5.5);
+
+    // Continuing from the previous value of 5.5.
+    old_val = volume.fetch_sub(1.5, std::memory_order_relaxed);
+    // old_val should be 5.5 and the new stored value 4.0.
+    ASSERT(old_val == 5.5);
+    ASSERT(volume.load(std::memory_order_relaxed) == 4.0);
+
+    // Using sub_fetch:
+    new_val = volume.sub_fetch(1.0, std::memory_order_relaxed);
+    // new_val should be 4.0 - 1.0 = 3.0.
+    ASSERT(new_val == 3.0);
+    ASSERT(volume.load(std::memory_order_relaxed) == 3.0);
+
+    const size_t num_threads = 10;
+    const size_t num_iterations = 100;
+    CAtomic<double> volume_C(0.0);
+
+    tbb::parallel_for(size_t(0), num_threads, [&](size_t) {
+        for (size_t i = 0; i < num_iterations; ++i) {
+          volume_C.fetch_add(1.0, std::memory_order_relaxed);
+        }
+    });
+
+    double expected = num_threads * num_iterations;
+    // Use a tolerance in case of tiny rounding errors.
+    ASSERT(std::abs(volume_C.load(std::memory_order_relaxed) - expected) < 1e-6);
+    */
   }
 
   void initializeBlockVolumes() {

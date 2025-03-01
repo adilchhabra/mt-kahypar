@@ -254,13 +254,15 @@ namespace mt_kahypar::ds {
         auto comparator = [](const TmpEdgeInformation& e1, const TmpEdgeInformation& e2) {
           return e1._target < e2._target;
         };
-//        adil: todo c++20 compat
-//        if (end - start > HIGH_DEGREE_CONTRACTION_THRESHOLD
-//            || resulting_ranges.size() < 2 * static_cast<size_t>(tbb::this_task_arena::max_concurrency())) {
-//          tbb::parallel_sort(tmp_edges.begin() + start, tmp_edges.begin() + end, comparator);
-//        } else {
-          std::sort(tmp_edges.begin() + start, tmp_edges.begin() + end, comparator);
-//        }
+
+      // Adil: Changed tmp_edges.begin() to tmp_edges.data() since modern TBB
+      // requires continguous iterators which ds/Array does not support
+       if (end - start > HIGH_DEGREE_CONTRACTION_THRESHOLD
+           || resulting_ranges.size() < 2 * static_cast<size_t>(tbb::this_task_arena::max_concurrency())) {
+         tbb::parallel_sort(tmp_edges.data() + start, tmp_edges.data() + end, comparator);
+       } else {
+          std::sort(tmp_edges.data() + start, tmp_edges.data() + end, comparator);
+       }
       });
     }
 

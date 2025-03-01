@@ -352,12 +352,11 @@ StaticHypergraph StaticHypergraph::contract(parallel::scalable_vector<HypernodeI
           tmp_hypernodes[coarse_hn].setSize(contracted_size);
 
           if (deterministic) {
-            LOG << RED << "Det";
-            exit(0);
             // sort for determinism
-//            adil: todo modern c++20 compat
-//            tbb::parallel_sort(tmp_incident_nets.begin() + incident_nets_start,
-//                               tmp_incident_nets.begin() + incident_nets_start + contracted_size);
+            // Adil: Changed tmp_incident_nets.begin() to tmp_incident_nets.data() since modern TBB
+            // requires continguous iterators which ds/Array does not support
+            tbb::parallel_sort(tmp_incident_nets.data() + incident_nets_start,
+                              tmp_incident_nets.data() + incident_nets_start + contracted_size);
           }
         }
         duplicate_incident_nets_map.free();

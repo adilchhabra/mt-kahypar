@@ -136,8 +136,8 @@ struct ObjectiveFunction<PartitionedHypergraph, Objective::pimod> {
         }
       }
     }
-    auto final = static_cast<HyperedgeWeight>(std::floor(pi_mod_contribution * 10000000));
-
+    auto final = static_cast<HyperedgeWeight>(std::floor(pi_mod_contribution * 1000000));
+    //auto final = pi_mod_contribution;
     return -1* final;
   }
 };

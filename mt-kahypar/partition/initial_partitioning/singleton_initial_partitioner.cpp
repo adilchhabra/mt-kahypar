@@ -42,8 +42,6 @@ void SingletonInitialPartitioner<TypeTraits>::partitionImpl() {
       if(hg.initialNumNodes() == static_cast<HypernodeID>(_context.partition.k)) {
         PartitionID cur_block = 0;
           for (const HypernodeID &hn: hg.nodes()) {
-              //PartitionID singleton_block = static_cast<PartitionID>(hn); // adil: potential out of bounds
-            //   LOG << "IP: Node " << hn << " gets block = " << cur_block;
               hg.setNodePart(hn, cur_block++);
           }
       } else {

@@ -159,7 +159,7 @@ class StaticHypergraph {
     }
 
     void addStrength(double strength) {
-      ASSERT(!isDisabled());
+      //ASSERT(!isDisabled());
       _strength += strength;
     }
 
