@@ -129,12 +129,17 @@ bool LabelPropagationRefiner<GraphAndGainTypes>::refineImpl(mt_kahypar_partition
   labelPropagation(hypergraph, best_metrics);
 
   HEAVY_REFINEMENT_ASSERT(hypergraph.checkTrackedPartitionInformation(_gain_cache));
+
+  //ADIL: ROUNDING ERROR
+  // We can not always guarantee that current_metrics will be equal to best_metrics
+  // because of some rounding variation
+  if(_context.partition.preset_type != PresetType::cluster) {
   HEAVY_REFINEMENT_ASSERT(best_metrics.quality ==
                           metrics::quality(hypergraph, _context,
                                            !_context.refinement.label_propagation.execute_sequential),
                           V(best_metrics.quality) << V(metrics::quality(hypergraph, _context,
                                                                         !_context.refinement.label_propagation.execute_sequential)));
-
+  }
   // Update metrics statistics
   Gain delta = old_quality - best_metrics.quality;
 

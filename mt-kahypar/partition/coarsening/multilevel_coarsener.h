@@ -78,10 +78,11 @@ class MultilevelCoarsener : public ICoarsener,
   using AtomicMatchingState = parallel::IntegralAtomicWrapper<uint8_t>;
   using AtomicWeight = parallel::IntegralAtomicWrapper<HypernodeWeight>;
   using AtomicID = parallel::IntegralAtomicWrapper<HypernodeID>;
-  using AtomicStrength = parallel::AtomicWrapper<double>;
+  using AtomicStrength = parallel::IntegralAtomicWrapper<double>;
+  //using AtomicStrength = parallel::AtomicWrapper<double>;
 
   static constexpr bool debug = false;
-  static constexpr bool enable_heavy_assert = false;
+  static constexpr bool enable_heavy_assert = true;
   static constexpr HypernodeID kInvalidHypernode = std::numeric_limits<HypernodeID>::max();
 
  public:
@@ -164,7 +165,8 @@ class MultilevelCoarsener : public ICoarsener,
       cluster_ids[hn] = hn;
       if ( current_hg.nodeIsEnabled(hn) ) {
         _cluster_weight[hn] = current_hg.nodeWeight(hn);
-        _cluster_strength[hn] = parallel::AtomicWrapper<double>(current_hg.nodeStrength(hn)); //adil
+        _cluster_strength[hn] = current_hg.nodeStrength(hn);
+        //_cluster_strength[hn] = parallel::AtomicWrapper<double>(current_hg.nodeStrength(hn)); //adil
       }
     });
 
@@ -184,6 +186,7 @@ class MultilevelCoarsener : public ICoarsener,
 
     HEAVY_COARSENING_ASSERT([&] {
       parallel::scalable_vector<HypernodeWeight> expected_weights(current_hg.initialNumNodes());
+      parallel::scalable_vector<double> expected_strengths(current_hg.initialNumNodes());
       // Verify that clustering is correct
       for ( const HypernodeID& hn : current_hg.nodes() ) {
         const HypernodeID u = hn;
@@ -194,9 +197,10 @@ class MultilevelCoarsener : public ICoarsener,
           return false;
         }
         expected_weights[root_u] += current_hg.nodeWeight(hn);
+        expected_strengths[root_u] += current_hg.nodeStrength(hn);
       }
 
-      // Verify that cluster weights are aggregated correct
+      // Verify that cluster weights and cluster strengths are aggregated correct
       for ( const HypernodeID& hn : current_hg.nodes() ) {
         const HypernodeID u = hn;
         const HypernodeID root_u = cluster_ids[u];
@@ -205,9 +209,15 @@ class MultilevelCoarsener : public ICoarsener,
               << ", but currently it is" << _cluster_weight[u];
           return false;
         }
+        // since there can be some rounding errors in double parallel updates, allow for some difference
+        if ( root_u == u && (std::abs(expected_strengths[u] - _cluster_strength[u]) > 0.1)) {
+          LOG << "The expected strength of cluster" << u << "is" << expected_strengths[u]
+              << ", but currently it is" << _cluster_strength[u];
+          return false;
+        }
       }
       return true;
-    }(), "Parallel clustering computed invalid cluster ids and weights");
+    }(), "Parallel clustering computed invalid cluster ids and weights and strengths");
 
     const double reduction_vertices_percentage =
       static_cast<double>(num_hns_before_pass) /
@@ -486,8 +496,8 @@ class MultilevelCoarsener : public ICoarsener,
     if ( cluster_join_operation_allowed ) {
       cluster_ids[u] = rep;
       _cluster_weight[rep].fetch_add(weight_of_u, std::memory_order_relaxed);
-      //_cluster_strength[rep].fetch_add(strength_of_u, std::memory_order_relaxed); //adil clustering
-      _cluster_strength[rep]+=(parallel::AtomicWrapper<double>(strength_of_u));
+      _cluster_strength[rep].fetch_add(strength_of_u, std::memory_order_relaxed); //adil clustering
+      //_cluster_strength[rep]+=(parallel::AtomicWrapper<double>(strength_of_u));
       ++contracted_nodes;
       success = true;
     }
