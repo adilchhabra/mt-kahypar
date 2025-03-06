@@ -163,12 +163,6 @@ class PinCountInPart {
     ASSERT(id != kInvalidPartition && id < _k);
     const size_t value_pos = he * _values_per_hyperedge + id / _entries_per_value;
     const size_t bit_pos = (id % _entries_per_value) * _bits_per_element;
-    
-    if(value > _max_value) {
-      LOG << RED << "In setPinCount For he " << he << " with " << 
-      " new value = " << value << "; Max Value = " << _max_value << WHITE;
-    }
-    
     updateEntry(_pin_count_in_part[value_pos], bit_pos, value);
   }
 
@@ -183,12 +177,6 @@ class PinCountInPart {
     Value& current_value = _pin_count_in_part[value_pos];
     Value pin_count_in_part = (current_value & mask) >> bit_pos;
     ASSERT(pin_count_in_part + 1 <= _max_value);
-
-    if(pin_count_in_part + 1 > _max_value) {
-      LOG << RED << "In incremenetPinCount For he " << he << " with " << 
-      " new value = " << pin_count_in_part + 1 << "; Max Value = " << _max_value << WHITE;
-    }
-
     updateEntry(current_value, bit_pos, pin_count_in_part + 1);
     return pin_count_in_part + 1;
   }
@@ -204,11 +192,6 @@ class PinCountInPart {
     Value& current_value = _pin_count_in_part[value_pos];
     Value pin_count_in_part = (current_value & mask) >> bit_pos;
     ASSERT(pin_count_in_part > UL(0));
-
-    if(pin_count_in_part - 1 > _max_value) {
-      LOG << RED << "In decremenetPinCount For he " << he << " with " << 
-      " new value = " << pin_count_in_part - 1 << "; Max Value = " << _max_value << WHITE;
-    }
     updateEntry(current_value, bit_pos, pin_count_in_part - 1);
     return pin_count_in_part - 1;
   }
@@ -237,9 +220,6 @@ class PinCountInPart {
   inline void updateEntry(Value& value,
                           const size_t bit_pos,
                           const Value new_value) {
-    if(new_value > _max_value) {
-      LOG << RED << "New value = " << new_value << "; Max Value = " << _max_value << WHITE;
-    }
     ASSERT(new_value <= _max_value);
     const Value zero_mask = ~(_extraction_mask << bit_pos);
     const Value value_mask = new_value << bit_pos;

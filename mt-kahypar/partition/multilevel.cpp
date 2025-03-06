@@ -117,7 +117,8 @@ namespace {
       // ADIL: for clustering IP, call singleton partitioner with k = no. hypernodes
       // in the coarsest graph
       context.partition.k = phg.initialNumNodes();
-      phg.setK(context.partition.k, input_he_count);
+      HypernodeID input_max_he_size = hypergraph.maxEdgeSize();
+      phg.setK(context.partition.k, input_he_count, input_max_he_size);
       context.setupPartWeights(hypergraph.totalWeight());
       context.setupContractionLimit(hypergraph.totalWeight());
       context.setupThreadsPerFlowSearch();

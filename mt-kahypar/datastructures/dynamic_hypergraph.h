@@ -758,6 +758,11 @@ class DynamicHypergraph {
             "setClusteringMode is not supported in dynamic hypergraph");
   }
 
+  bool getClusteringMode() {
+    throw NonSupportedOperationException(
+            "getClusteringMode is not supported in dynamic hypergraph");
+  }
+
   // ####################### Fixed Vertex Support #######################
 
   void addFixedVertexSupport(FixedVertexSupport<DynamicHypergraph>&& fixed_vertices) {

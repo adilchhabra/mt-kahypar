@@ -171,17 +171,11 @@ StaticHypergraph StaticHypergraph::contract(parallel::scalable_vector<HypernodeI
           const size_t incidence_array_end = tmp_hyperedges[he].firstInvalidEntry();
           for ( size_t pos = incidence_array_start; pos < incidence_array_end; ++pos ) {
             const HypernodeID pin = _incidence_array[pos];
-//            LOG << "He" << he << " contains pin " << pin << " at pos " << pos << " with strength = " << _incident_strength_array[pos] << "; cluster = " << map_to_coarse_hypergraph(pin);
             ASSERT(pos < tmp_incidence_array.size());
             tmp_incidence_array[pos] = map_to_coarse_hypergraph(pin);
-            tmp_incident_strength_array[pos] = _incident_strength_array[pos]; // adil clustering
+            tmp_incident_strength_array[pos] = _incident_strength_array[pos]; // adil: built for hg clustering
           }
-//          LOG << "Mapped pins";
 
-          // Remove duplicates and disabled vertices
-          // adil clustering: accumulate strengths for duplicate values
-          // auto first_entry_it = tmp_incidence_array.begin() + incidence_array_start;
-          // auto last_entry_it = tmp_incidence_array.begin() + incidence_array_end; // adil clustering
 // Sort pins and align strengths
           std::vector<std::pair<HypernodeID, double> > aligned_data;
           for (size_t pos = incidence_array_start; pos < incidence_array_end; ++pos) {
@@ -198,18 +192,11 @@ StaticHypergraph StaticHypergraph::contract(parallel::scalable_vector<HypernodeI
             tmp_incidence_array[pos] = aligned_data[pos - incidence_array_start].first;
             tmp_incident_strength_array[pos] = aligned_data[pos - incidence_array_start].second;
           }
-//            LOG << "After sorting, incidence array for hyperedge " << he << ":";
-//            for (size_t pos = incidence_array_start; pos < incidence_array_end; ++pos) {
-//                LOG << "  Pin: " << tmp_incidence_array[pos]
-//                    << ", Strength: " << tmp_incident_strength_array[pos];
-//            }
 
           // Traverse sorted arrays and accumulate strengths for duplicates
           size_t write_index = incidence_array_start;
           for (size_t read_index = incidence_array_start + 1; read_index < incidence_array_end; ++read_index) {
             if (tmp_incidence_array[read_index] == tmp_incidence_array[write_index]) {
-//                    LOG << "Duplicate pin found: " << tmp_incidence_array[read_index]
-//                        << " at index " << read_index << ", accumulating strength.";
               tmp_incident_strength_array[write_index] += tmp_incident_strength_array[read_index];
             } else {
               ++write_index;
@@ -238,22 +225,17 @@ StaticHypergraph StaticHypergraph::contract(parallel::scalable_vector<HypernodeI
 //                }
 //            }
 
-          if (contracted_size > 1 || (contracted_size == 1 && _clustering_mode)) {  // adil: self loop retain
+          // Adil: In clustering mode, retain single-pin hyperedges
+          if (contracted_size > 1 || (contracted_size == 1 && _clustering_mode)) {
             // Compute hash of contracted hyperedge
             size_t footprint = kEdgeHashSeed;
             for ( size_t pos = incidence_array_start; pos < incidence_array_start + contracted_size; ++pos ) {
-//              if(contracted_size == 1) {
-//                  LOG << "Self loop edge " << he << " contains cluster " << tmp_incidence_array[pos];
-//              }
               footprint += cs2(tmp_incidence_array[pos]);
             }
-//            if(contracted_size == 1) {
-//                LOG << "Footprint = " << footprint;
-//            }
             hyperedge_hash_map.insert(footprint,
                                       ContractedHyperedgeInformation{ he, footprint, contracted_size, true });
           } else {
-            // Hyperedge becomes a single-pin hyperedge
+            // In non-cluster mode, remove single-pin hyperedges
             valid_hyperedges[he] = 0;
             tmp_hyperedges[he].disable();
           }
@@ -363,6 +345,24 @@ StaticHypergraph StaticHypergraph::contract(parallel::scalable_vector<HypernodeI
       }
     });
 
+    if ( _clustering_mode ) {
+      // Test 1: For every enabled hyperedge that is single-pin, check that it is marked as valid.
+      for ( HyperedgeID he = 0; he < _num_hyperedges; ++he ) {
+        if ( edgeIsEnabled(he) && tmp_hyperedges[he].size() == 1 ) {
+          if ( valid_hyperedges[he] != 1 ) {
+            std::cerr << "Error: Single-pin hyperedge " << he << " not marked valid." << std::endl;
+            assert(false);
+          }
+          // Test 2: Ensure the incidence array entry is not invalid.
+          const size_t pos = tmp_hyperedges[he].firstEntry();
+          if ( tmp_incidence_array[pos] == kInvalidHypernode ) {
+            std::cerr << "Error: Single-pin hyperedge " << he << " has an invalid pin." << std::endl;
+            assert(false);
+          }
+        }
+      }
+    }
+
   // #################### STAGE 3 ####################
   // In the step before we aggregated hyperedges within a bucket data structure.
   // Hyperedges with the same hash/footprint are stored inside the same bucket.
@@ -450,6 +450,26 @@ StaticHypergraph StaticHypergraph::contract(parallel::scalable_vector<HypernodeI
       }
       hyperedge_hash_map.free(bucket);
     });
+
+    if ( _clustering_mode ) {
+      // Use a temporary map to check merging of single-pin hyperedges.
+      std::unordered_map<HypernodeID, HyperedgeWeight> single_pin_map;
+      for ( HyperedgeID he = 0; he < _num_hyperedges; ++he ) {
+        if ( valid_hyperedges[he] && tmp_hyperedges[he].size() == 1 ) {
+          const size_t pos = tmp_hyperedges[he].firstEntry();
+          HypernodeID pin = tmp_incidence_array[pos];
+          // If this pin was already seen, then merging should have combined their weights.
+          if ( single_pin_map.find(pin) != single_pin_map.end() ) {
+            // Depending on your design, you might expect that only one hyperedge remains valid.
+            std::cerr << "Error: Duplicate single-pin hyperedge for pin " << pin 
+                      << " still exists post-merge." << std::endl;
+            assert(false);
+          } else {
+            single_pin_map[pin] = tmp_hyperedges[he].weight();
+          }
+        }
+      }
+    }
 
   // #################### STAGE 4 ####################
   // Coarsened hypergraph is constructed here by writting data from temporary

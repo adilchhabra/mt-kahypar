@@ -263,7 +263,7 @@ class PartitionedGraph {
   }
 
   // change k value after init
-  void setK(PartitionID k, HyperedgeID init_num_hyperedges) {
+  void setK(PartitionID k, HyperedgeID, HypernodeID) {
     _k = k;
   }
 

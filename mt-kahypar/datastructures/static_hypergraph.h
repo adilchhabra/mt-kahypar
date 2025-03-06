@@ -914,6 +914,10 @@ class StaticHypergraph {
     _clustering_mode = to_set;
   }
 
+  bool getClusteringMode() {
+    return _clustering_mode;
+  }
+
   void setCommunityIDs(ds::Clustering&& communities) {
     ASSERT(communities.size() == initialNumNodes());
     _community_ids = std::move(communities);

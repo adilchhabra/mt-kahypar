@@ -180,7 +180,7 @@ class PartitionedHypergraph {
   }
 
   // change k value after init
-  void setK(PartitionID k, HyperedgeID init_num_hyperedges) {
+  void setK(PartitionID k, HyperedgeID init_num_hyperedges, HypernodeID init_max_he_size) {
     _k = k;
     _part_weights.assign(k, CAtomic<HypernodeWeight>(0));
     _part_volumes.assign(k, CAtomic<double>(0));
@@ -188,7 +188,7 @@ class PartitionedHypergraph {
     tbb::parallel_invoke([&] { }, [&] {
           _con_info.reset();
           _con_info = ConnectivityInformation(
-            init_num_hyperedges, k, _hg->maxEdgeSize(), parallel_tag_t { });
+            init_num_hyperedges, k, init_max_he_size, parallel_tag_t { });
         });
   }
 
@@ -512,7 +512,7 @@ class PartitionedHypergraph {
   }
 
   /**
-   * Restores a previously removed set of singple-pin and parallel hyperedges. Note, that hes_to_restore
+   * Restores a previously removed set of single-pin and parallel hyperedges. Note, that hes_to_restore
    * must be exactly the same and given in the reverse order as returned by removeSinglePinAndParallelNets(...).
    */
   template <typename GainCache>
@@ -530,8 +530,9 @@ class PartitionedHypergraph {
           const HyperedgeID representative = hes_to_restore[i].representative;
           ASSERT(edgeIsEnabled(he));
           const bool is_single_pin_he = edgeSize(he) == 1;
-          if (is_single_pin_he) {
-            // Restore single-pin net
+          if (is_single_pin_he && !(_hg->getClusteringMode())) {
+            // Restore single-pin net if clustering mode not enabled
+            // in clustering mode, we retain single-pin hyperedges
             HypernodeID single_vertex_of_he = kInvalidHypernode;
             for ( const HypernodeID& pin : pins(he)) {
               single_vertex_of_he = pin;
@@ -1360,26 +1361,19 @@ class PartitionedHypergraph {
     ASSERT(to != kInvalidPartition && to < _k);
     double loyalty_To = 0;
     double loyalty_From = 0;
-    // HypernodeWeight computed_edge_weight = 0;
     double computed_edge_weight = 0;
     size_t pin_idx = 0;
     size_t hn_pin_idx = 0;
     for ( const HypernodeID& pin : pins(e)) {
       if (pin != u) {
         if (partID(pin) == to) {
-          // loyalty_To += nodeWeight(pin);
-          // loyalty_To += (static_cast<double>(nodeWeight(pin))/static_cast<double>(edgeStrength(e)));
           loyalty_To += getNodeStrength(pin_idx, e);
         } else if (partID(pin) == from) {
-          // loyalty_From += nodeWeight(pin);
-          // loyalty_From += (static_cast<double>(nodeWeight(pin))/static_cast<double>(edgeStrength(e)));
           loyalty_From += getNodeStrength(pin_idx, e);
         }
       } else {
         hn_pin_idx = pin_idx;
       }
-      // computed_edge_weight += nodeWeight(pin);
-      // computed_edge_weight += (static_cast<double>(nodeWeight(pin)) / static_cast<double>(edgeStrength(e)));
       computed_edge_weight += getNodeStrength(pin_idx, e);
       pin_idx++;
     }
