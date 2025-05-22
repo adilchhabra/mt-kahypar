@@ -850,6 +850,20 @@ class PartitionedGraph {
     return _hg->fixedVertexBlock(hn);
   }
 
+  // ####################### Clustering Parameters #######################
+
+  void setPiModTheta(double theta) {
+    throw NonSupportedOperationException(
+            "setPiModTheta(t) is not supported for partitioned graph");
+    return;
+  }
+
+  double getPiModTheta() const {
+    throw NonSupportedOperationException(
+            "getPiModTheta() is not supported for partitioned graph");
+    return 0.5;
+  }
+
   // ####################### Memory Consumption #######################
 
   void memoryConsumption(utils::MemoryTreeNode* parent) const {

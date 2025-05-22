@@ -122,6 +122,7 @@ namespace {
       context.setupPartWeights(hypergraph.totalWeight());
       context.setupContractionLimit(hypergraph.totalWeight());
       context.setupThreadsPerFlowSearch();
+      phg.setPiModTheta(context.clustering.theta);
     }
 
     if ( !is_vcycle ) {

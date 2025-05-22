@@ -66,7 +66,7 @@ class PiModGainComputation : public GainComputationBase<PiModGainComputation, Pi
     // map to store incident cluster IDs and the gain in pi modularity associated
     // with them
     std::unordered_map<PartitionID, double> delta_supt;
-    double theta = 0.5;
+    double theta = phg.getPiModTheta();
     int total_self_loop_count = 0;
     // iterate over all incident edges of hn to compute change in support of incident hyperedges
     // if the hypernode is moved to the corresponding cluster
@@ -176,7 +176,7 @@ class PiModGainComputation : public GainComputationBase<PiModGainComputation, Pi
 
     // Calculate gamma
     const double gamma = (vol_H - 2 * m) / (vol_H - m);
-    double theta = 0.5;
+    double theta = phg.getPiModTheta();
 
     // volume of new_cluster
     double vol_C = phg.partVolume(new_cluster);
@@ -213,7 +213,7 @@ class PiModGainComputation : public GainComputationBase<PiModGainComputation, Pi
 
     // Calculate gamma
     const double gamma = (vol_H - 2 * m) / (vol_H - m);
-    double theta = 0.5;
+    double theta = phg.getPiModTheta();
 
     // volume of old_cluster
     double vol_C = phg.partVolume(old_cluster);

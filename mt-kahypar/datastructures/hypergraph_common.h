@@ -166,6 +166,7 @@ struct SynchronizedEdgeUpdate {
   double vol_From = 0;
   double hn_strength = 0;
   double hn_loyalty = 0;
+  double theta = 0.5;
 };
 
 struct NoOpDeltaFunc {

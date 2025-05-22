@@ -650,6 +650,7 @@ class PartitionedHypergraph {
       sync_update.weight_From = _part_weights[from];
       sync_update.target_graph = _target_graph;
       sync_update.edge_locks = &_pin_count_update_ownership;
+      sync_update.theta = _theta; //ADIL Clustering
       for ( const HyperedgeID he : incidentEdges(u)) {
         updatePinCountOfHyperedge(he, u, from, to, sync_update, delta_func, notify_func);
       }
@@ -912,6 +913,16 @@ class PartitionedHypergraph {
 
   PartitionID fixedVertexBlock(const HypernodeID hn) const {
     return _hg->fixedVertexBlock(hn);
+  }
+
+  // ####################### Clustering Parameters #######################
+
+  void setPiModTheta(double theta) {
+    _theta = theta;
+  }
+
+  double getPiModTheta() const {
+    return _theta;
   }
 
   // ####################### Memory Consumption #######################
@@ -1416,6 +1427,9 @@ class PartitionedHypergraph {
   // ! In order to update the pin count of a hyperedge thread-safe, a thread must acquire
   // ! the ownership of a hyperedge via a CAS operation.
   Array<SpinLock> _pin_count_update_ownership;
+
+  // ! PiMod Theta
+  double _theta = 0.5;
 };
 } // namespace ds
 } // namespace mt_kahypar

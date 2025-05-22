@@ -65,7 +65,7 @@ struct PiModAttributedGains {
 
     // Calculate gamma
     const double gamma = (vol_H - 2 * m) / (vol_H - m);
-    double theta = 0.5;
+    double theta = sync_update.theta;
 
     // volume of old_cluster (if hn in it)
     double vol_C = sync_update.vol_From + sync_update.hn_strength;
@@ -94,7 +94,7 @@ struct PiModAttributedGains {
 
     // Calculate gamma
     const double gamma = (vol_H - 2 * m) / (vol_H - m);
-    double theta = 0.5;
+    double theta = sync_update.theta;
 
     // volume of new_cluster
     double vol_C = sync_update.vol_To - sync_update.hn_strength;
@@ -122,7 +122,7 @@ struct PiModAttributedGains {
 
   static HyperedgeWeight gain(const SynchronizedEdgeUpdate& sync_update) {
     // here, we receive volumes of To and From, and loyalty to To and From with hn already in To
-    double theta = 0.5;
+    double theta = sync_update.theta;
     // LOG << "ATT: For node " << sync_update.hn << " and edge " << sync_update.he;
     // LOG << "For he = " << sync_update.he;
 

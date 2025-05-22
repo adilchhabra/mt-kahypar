@@ -92,7 +92,7 @@ struct ObjectiveFunction<PartitionedHypergraph, Objective::pimod> {
     auto vol_H = static_cast<double>(phg.initialTotalVertexDegree());
     auto m = static_cast<double>(phg.initialNumEdges());
 
-    double theta = 0.5;
+    double theta = phg.getPiModTheta();
     double totalEdgeWeight = 0;
 
     // Calculate gamma
