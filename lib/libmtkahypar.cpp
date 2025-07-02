@@ -137,6 +137,10 @@ int mt_kahypar_set_context_parameter(mt_kahypar_context_t* context,
           return 0;
         } else if ( objective == "soed" ) {
           c.partition.objective = Objective::soed;
+        } else if ( objective == "pimod" ) {
+          c.partition.objective = Objective::pimod;
+        } else if ( objective == "hmod" ) {
+          c.partition.objective = Objective::hmod;
         }
         return 3;
       }
@@ -164,11 +168,21 @@ void mt_kahypar_set_partitioning_parameters(mt_kahypar_context_t* context,
       c.partition.objective = Objective::km1; break;
     case SOED:
       c.partition.objective = Objective::soed; break;
+    case PIMOD:
+      c.partition.objective = Objective::pimod; break;
+    case HMOD:
+      c.partition.objective = Objective::hmod; break;
+
   }
 }
 
 void mt_kahypar_set_seed(const size_t seed) {
   utils::Randomize::instance().setSeed(seed);
+}
+
+void mt_kahypar_set_clustering_parameters(mt_kahypar_context_t* context, const double theta) {
+  Context& c = *reinterpret_cast<Context*>(context);
+  c.clustering.theta = theta;
 }
 
 void mt_kahypar_set_individual_target_block_weights(mt_kahypar_context_t* context,
@@ -756,6 +770,44 @@ mt_kahypar_hyperedge_weight_t mt_kahypar_steiner_tree(const mt_kahypar_partition
         phg.setTargetGraph(target);
         return metrics::quality(phg, Objective::steiner_tree);
       }
+    case NULLPTR_PARTITION: return 0;
+  }
+  return 0;
+}
+
+mt_kahypar_hyperedge_weight_t mt_kahypar_pimod(const mt_kahypar_partitioned_hypergraph_t partitioned_hg) {
+  switch ( partitioned_hg.type ) {
+    case MULTILEVEL_GRAPH_PARTITIONING:
+      return metrics::quality(utils::cast<StaticPartitionedGraph>(partitioned_hg), Objective::pimod);
+    case N_LEVEL_GRAPH_PARTITIONING:
+      return metrics::quality(utils::cast<DynamicPartitionedGraph>(partitioned_hg), Objective::pimod);
+    case MULTILEVEL_HYPERGRAPH_PARTITIONING:
+      return metrics::quality(utils::cast<StaticPartitionedHypergraph>(partitioned_hg), Objective::pimod);
+    case N_LEVEL_HYPERGRAPH_PARTITIONING:
+      return metrics::quality(utils::cast<DynamicPartitionedHypergraph>(partitioned_hg), Objective::pimod);
+    case LARGE_K_PARTITIONING:
+      return metrics::quality(utils::cast<SparsePartitionedHypergraph>(partitioned_hg), Objective::pimod);
+    case MULTILEVEL_HYPERGRAPH_CLUSTERING:
+      return metrics::quality(utils::cast<StaticPartitionedHypergraph>(partitioned_hg), Objective::pimod);
+    case NULLPTR_PARTITION: return 0;
+  }
+  return 0;
+}
+
+mt_kahypar_hyperedge_weight_t mt_kahypar_hmod(const mt_kahypar_partitioned_hypergraph_t partitioned_hg) {
+  switch ( partitioned_hg.type ) {
+    case MULTILEVEL_GRAPH_PARTITIONING:
+      return metrics::quality(utils::cast<StaticPartitionedGraph>(partitioned_hg), Objective::hmod);
+    case N_LEVEL_GRAPH_PARTITIONING:
+      return metrics::quality(utils::cast<DynamicPartitionedGraph>(partitioned_hg), Objective::hmod);
+    case MULTILEVEL_HYPERGRAPH_PARTITIONING:
+      return metrics::quality(utils::cast<StaticPartitionedHypergraph>(partitioned_hg), Objective::hmod);
+    case N_LEVEL_HYPERGRAPH_PARTITIONING:
+      return metrics::quality(utils::cast<DynamicPartitionedHypergraph>(partitioned_hg), Objective::hmod);
+    case LARGE_K_PARTITIONING:
+      return metrics::quality(utils::cast<SparsePartitionedHypergraph>(partitioned_hg), Objective::hmod);
+    case MULTILEVEL_HYPERGRAPH_CLUSTERING:
+      return metrics::quality(utils::cast<StaticPartitionedHypergraph>(partitioned_hg), Objective::hmod);
     case NULLPTR_PARTITION: return 0;
   }
   return 0;

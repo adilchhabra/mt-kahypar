@@ -194,6 +194,32 @@ class PartitionedGraph {
   }
 
   explicit PartitionedGraph(const PartitionID k,
+                            const double theta,
+                            Hypergraph& hypergraph) :
+    _input_num_nodes(hypergraph.initialNumNodes()),
+    _input_num_edges(hypergraph.initialNumEdges()),
+    _input_unique_ids(hypergraph.maxUniqueID()),
+    _input_total_vertex_degree(hypergraph.initialTotalVertexDegree()),
+    _k(k),
+    _theta(theta),
+    _hg(&hypergraph),
+    _target_graph(nullptr),
+    _part_weights(k, CAtomic<HypernodeWeight>(0)),
+    _part_volumes(k, CAtomic<HyperedgeID>(0)),
+    _part_ids(
+      "Refinement", "part_ids", hypergraph.initialNumNodes(), false, false),
+    _edge_sync_version(0),
+    _edge_sync(
+      "Refinement", "edge_sync", hypergraph.maxUniqueID(), false, false),
+    _edge_locks(
+      "Refinement", "edge_locks", hypergraph.maxUniqueID(), false, false),
+    _edge_markers(Hypergraph::is_static_hypergraph ? 0 : hypergraph.maxUniqueID()) {
+    _part_ids.assign(hypergraph.initialNumNodes(), kInvalidPartition, false);
+    _edge_sync.assign(hypergraph.maxUniqueID(), EdgeMove(), false);
+    _edge_locks.assign(hypergraph.maxUniqueID(), SpinLock(), false);
+  }
+
+  explicit PartitionedGraph(const PartitionID k,
                             Hypergraph& hypergraph,
                             parallel_tag_t) :
     _input_num_nodes(hypergraph.initialNumNodes()),
@@ -410,6 +436,13 @@ class PartitionedGraph {
   // ! Degree of a hypernode
   HyperedgeID nodeDegree(const HypernodeID u) const {
     return _hg->nodeDegree(u);
+  }
+
+  // ! Volume of a vertex
+  HyperedgeWeight nodeVolume(const HypernodeID) const {
+      throw NonSupportedOperationException(
+              "nodeVolume(u) is only supported on hypergraph data structure");
+      return -1;
   }
 
   // ! Strength of a hypernode
@@ -655,6 +688,13 @@ class PartitionedGraph {
     return _part_volumes[p].load(std::memory_order_relaxed);
   }
 
+  // ! Strength of a block
+  HypernodeWeight partStrength(const PartitionID p) const {
+    throw NonSupportedOperationException(
+            "partStrength(p) is only supported on hypergraph data structure");
+    return 0;
+  }
+
   // ! Returns whether hypernode u is adjacent to a least one cut hyperedge.
   bool isBorderNode(const HypernodeID u) const {
     const PartitionID part_id = partID(u);
@@ -862,6 +902,12 @@ class PartitionedGraph {
     throw NonSupportedOperationException(
             "getPiModTheta() is not supported for partitioned graph");
     return 0.5;
+  }
+
+  bool getClusteringMode() const {
+    throw NonSupportedOperationException(
+            "getClusteringMode() is not supported for partitioned graph");
+    return false;
   }
 
   // ####################### Memory Consumption #######################
@@ -1257,6 +1303,9 @@ class PartitionedGraph {
 
   // ! We need to synchronize uncontractions via atomic markers
   ThreadSafeFastResetFlagArray<uint8_t> _edge_markers;
+
+  // ! PiMod Theta
+  double _theta = 0.5;
 
   // ! Bitsets to create shallow and deep copies of the connectivity set
   // ! They are only required to implement the same interface of our hypergraph

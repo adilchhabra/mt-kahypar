@@ -511,6 +511,13 @@ class DynamicGraph {
     return _adjacency_array.nodeDegree(u);
   }
 
+  // ! Volume of a vertex
+  HyperedgeWeight nodeVolume(const HypernodeID) const {
+      throw NonSupportedOperationException(
+              "nodeVolume(u) is not supported in dynamic graph");
+      return -1;
+  }
+
   // ! Strength of a vertex
   HypernodeWeight nodeStrength(const HypernodeID) const {
       throw NonSupportedOperationException(

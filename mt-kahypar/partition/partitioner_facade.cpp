@@ -289,7 +289,7 @@ namespace internal {
         break;
       #endif
       case MULTILEVEL_HYPERGRAPH_PARTITIONING:
-        io::writePartitionFile(utils::cast_const<StaticPartitionedHypergraph>(phg), "output.txt");
+        io::writePartitionFile(utils::cast_const<StaticPartitionedHypergraph>(phg), filename);
         break;
       #ifdef KAHYPAR_ENABLE_LARGE_K_PARTITIONING_FEATURES
       case LARGE_K_PARTITIONING:

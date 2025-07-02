@@ -29,6 +29,7 @@
 
 #include <algorithm>
 
+#include "mt-kahypar/partition/context_enum_classes.h"
 #include "mt-kahypar/utils/exception.h"
 #include "mt-kahypar/partition/conversion.h"
 
@@ -338,6 +339,9 @@ namespace mt_kahypar {
       coarsening.contraction_limit =
               coarsening.contraction_limit_multiplier * partition.k;
     }
+    if(partition.preset_type == PresetType::cluster) {
+      coarsening.contraction_limit = coarsening.contraction_limit_multiplier * 2;
+    }
 
     // Setup maximum allowed vertex and high-degree vertex weight
     setupMaximumAllowedNodeWeight(total_hypergraph_weight);
@@ -491,6 +495,7 @@ namespace mt_kahypar {
         case Objective::soed: partition.gain_policy = GainPolicy::soed; break;
         case Objective::steiner_tree: partition.gain_policy = GainPolicy::steiner_tree; break;
         case Objective::pimod: partition.gain_policy = GainPolicy::pimod; break;
+        case Objective::hmod: partition.gain_policy = GainPolicy::hmod; break;
         case Objective::UNDEFINED: partition.gain_policy = GainPolicy::none; break;
       }
     } else if ( partition.instance_type == InstanceType::graph ) {
@@ -523,7 +528,7 @@ namespace mt_kahypar {
     if ( context.partition.objective == Objective::steiner_tree ) {
       str << context.mapping
           << "-------------------------------------------------------------------------------\n";
-    } else if ( context.partition.objective == Objective::pimod) {
+    } else if ( context.partition.objective == Objective::pimod || context.partition.objective == Objective::hmod) {
         str << context.clustering
             << "-------------------------------------------------------------------------------\n";
     }

@@ -82,6 +82,7 @@ class StaticHypergraph {
       _begin(0),
       _size(0),
       _weight(1),
+      _volume(0),
       _strength(0.0),
       _valid(false) { }
 
@@ -89,6 +90,7 @@ class StaticHypergraph {
       _begin(0),
       _size(0),
       _weight(1),
+      _volume(0),
       _strength(0.0),
       _valid(valid) { }
 
@@ -97,6 +99,7 @@ class StaticHypergraph {
       _begin(begin),
       _size(0),
       _weight(1),
+      _volume(0),
       _strength(0.0),
       _valid(false) { }
 
@@ -149,6 +152,15 @@ class StaticHypergraph {
       _weight = weight;
     }
 
+    HyperedgeWeight volume() const {
+      return _volume;
+    }
+
+    void setVolume(HyperedgeWeight volume) {
+      ASSERT(!isDisabled());
+      _volume = volume;
+    }
+
     double strength() const {
       return _strength;
     }
@@ -170,6 +182,8 @@ class StaticHypergraph {
     size_t _size;
     // ! Hypernode weight
     HypernodeWeight _weight;
+    // ! Hypernode volume (cumulative deg)
+    HyperedgeWeight _volume;
     // ! Hypernode weight
     double _strength;
     // ! Flag indicating whether or not the element is active.
@@ -390,6 +404,8 @@ class StaticHypergraph {
           }, [&] {
             hn_weights.resize("Coarsening", "hn_weights", num_hypernodes);
           }, [&] {
+            hn_volumes.resize("Coarsening", "hn_volumes", num_hypernodes);
+          }, [&] {
             hn_strengths.resize("Coarsening", "hn_strengths", num_hypernodes); // adil clustering
           }, [&] {
             tmp_hyperedges.resize("Coarsening", "tmp_hyperedges", num_hyperedges);
@@ -409,6 +425,7 @@ class StaticHypergraph {
     IncidentNets tmp_incident_nets;
     Array<parallel::IntegralAtomicWrapper<size_t> > tmp_num_incident_nets;
     Array<parallel::IntegralAtomicWrapper<HypernodeWeight> > hn_weights;
+    Array<parallel::IntegralAtomicWrapper<HyperedgeWeight> > hn_volumes;
     Array<parallel::AtomicWrapper<double> > hn_strengths;
     Array<Hyperedge> tmp_hyperedges;
     IncidenceArray tmp_incidence_array;
@@ -636,6 +653,17 @@ class StaticHypergraph {
   void setNodeWeight(const HypernodeID u, const HypernodeWeight weight) {
     ASSERT(!hypernode(u).isDisabled(), "Hypernode" << u << "is disabled");
     return hypernode(u).setWeight(weight);
+  }
+
+  // ! Volume of a vertex
+  HyperedgeWeight nodeVolume(const HypernodeID u) const {
+    return hypernode(u).volume();
+  }
+
+  // ! Sets the volume of a vertex
+  void setNodeVolume(const HypernodeID u, const HyperedgeWeight volume) {
+    ASSERT(!hypernode(u).isDisabled(), "Hypernode" << u << "is disabled");
+    return hypernode(u).setVolume(volume);
   }
 
   // ! Strength of a vertex
@@ -1080,6 +1108,8 @@ class StaticHypergraph {
   IncidenceArray _incidence_array;
   // ! Incident net strengths of hypernodes
   IncidentStrengthArray _incident_strength_array;
+  // ! Incident net volumes of hypernodes
+  IncidentStrengthArray _incident_volume_array;
 
   // ! Communities
   ds::Clustering _community_ids;

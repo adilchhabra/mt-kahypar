@@ -74,7 +74,9 @@ typedef enum {
 typedef enum {
   CUT,
   KM1,
-  SOED
+  SOED,
+  PIMOD,
+  HMOD,
 } mt_kahypar_objective_t;
 
 /**

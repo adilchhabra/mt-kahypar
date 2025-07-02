@@ -45,7 +45,7 @@ namespace {
 static constexpr bool debug = false;
 
 struct PQElement {
-  HyperedgeWeight rating;
+  Gain rating;
   HypernodeID u;
 };
 
@@ -89,7 +89,7 @@ void compute_greedy_mapping(CommunicationHypergraph& communication_hg,
                             const HypernodeID seed_node) {
   // For each node u, the ratings store weight of all incident hyperedges
   // that connect u to partial assignment
-  vec<HyperedgeWeight> rating(communication_hg.initialNumNodes(), 0);
+  vec<Gain> rating(communication_hg.initialNumNodes(), 0);
   vec<bool> visited_hes(communication_hg.initialNumEdges(), false);
   vec<bool> up_to_date_ratings(communication_hg.initialNumNodes(), true);
   vec<HypernodeID> nodes_to_update;
@@ -127,7 +127,7 @@ void compute_greedy_mapping(CommunicationHypergraph& communication_hg,
     nodes_to_update.clear();
     for ( const HyperedgeID& he : communication_hg.incidentEdges(u) ) {
       if ( !visited_hes[he] ) {
-        const HyperedgeWeight edge_weight = communication_hg.edgeWeight(he);
+        const Gain edge_weight = communication_hg.edgeWeight(he);
         for ( const HypernodeID& pin : communication_hg.pins(he) ) {
           rating[pin] += edge_weight;
           if ( up_to_date_ratings[pin] ) {
@@ -155,9 +155,9 @@ void compute_greedy_mapping(CommunicationHypergraph& communication_hg,
   // Assign seed node to process with minimum weighted degree
   assign(seed_node, get_node_with_minimum_weighted_degree(target_graph.graph()));
 
-  HyperedgeWeight actual_objective = 0;
+  Gain actual_objective = 0;
   vec<PartitionID> tie_breaking;
-  vec<HyperedgeWeight> tmp_ratings(communication_hg.initialNumNodes(), 0);
+  vec<Gain> tmp_ratings(communication_hg.initialNumNodes(), 0);
   while ( !pq.empty() ) {
     const PQElement best = pq.top();
     const HypernodeID u = best.u;
@@ -173,11 +173,11 @@ void compute_greedy_mapping(CommunicationHypergraph& communication_hg,
     // to the process that minimizes the steiner tree metric.
     for ( const HyperedgeID& he : communication_hg.incidentEdges(u) ) {
       ds::Bitset& connectivity_set = communication_hg.deepCopyOfConnectivitySet(he);
-      const HyperedgeWeight edge_weight = communication_hg.edgeWeight(he);
-      const HyperedgeWeight distance_before = communication_hg.connectivity(he) > 0 ?
+      const Gain edge_weight = communication_hg.edgeWeight(he);
+      const Gain distance_before = communication_hg.connectivity(he) > 0 ?
         target_graph.distance(connectivity_set) : 0;
       for ( const PartitionID process : unassigned_processors_view ) {
-        const HyperedgeWeight distance_after =
+        const Gain distance_after =
           target_graph.distanceWithBlock(connectivity_set, process);
         tmp_ratings[process] += (distance_after - distance_before) * edge_weight;
       }
@@ -185,7 +185,7 @@ void compute_greedy_mapping(CommunicationHypergraph& communication_hg,
 
     // Determine processor that would result in the least increase of the
     // steiner tree metric.
-    HyperedgeWeight best_rating = std::numeric_limits<HyperedgeWeight>::max();
+    Gain best_rating = std::numeric_limits<Gain>::max();
     for ( const PartitionID process : unassigned_processors_view ) {
       if ( tmp_ratings[process] < best_rating ) {
         tie_breaking.clear();
@@ -228,7 +228,7 @@ void GreedyMapping<CommunicationHypergraph>::mapToTargetGraph(CommunicationHyper
 
   utils::Timer& timer = utils::Utilities::instance().getTimer(context.utility_id);
   SpinLock best_lock;
-  HyperedgeWeight best_objective = metrics::quality(communication_hg, Objective::steiner_tree);
+  Gain best_objective = metrics::quality(communication_hg, Objective::steiner_tree);
   vec<PartitionID> best_mapping(communication_hg.initialNumNodes(), 0);
   std::iota(best_mapping.begin(), best_mapping.end(), 0);
   timer.start_timer("initial_mapping", "Initial Mapping");
@@ -244,7 +244,7 @@ void GreedyMapping<CommunicationHypergraph>::mapToTargetGraph(CommunicationHyper
     }
 
     // Check if new mapping is better than the currently best mapping
-    const HyperedgeWeight objective = metrics::quality(tmp_communication_phg, Objective::steiner_tree);
+    const Gain objective = metrics::quality(tmp_communication_phg, Objective::steiner_tree);
     best_lock.lock();
     if ( objective < best_objective ) {
       best_objective = objective;

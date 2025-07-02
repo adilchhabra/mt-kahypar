@@ -108,7 +108,31 @@ class PartitionedHypergraph {
     _hg(&hypergraph),
     _target_graph(nullptr),
     _part_weights(k, CAtomic<HypernodeWeight>(0)),
-    _part_volumes(k, CAtomic<double>(0)),
+    _part_volumes(k, CAtomic<HypernodeWeight>(0)),
+    _part_strengths(k, CAtomic<double>(0)),
+    _edge_size_cnt(hypergraph.maxEdgeSize()+1, CAtomic<HyperedgeID>(0)),
+    _part_ids(
+      "Refinement", "part_ids", hypergraph.initialNumNodes(), false, false),
+    _con_info(hypergraph.initialNumEdges(), k, hypergraph.maxEdgeSize()),
+    _pin_count_update_ownership(
+      "Refinement", "pin_count_update_ownership", hypergraph.initialNumEdges(), true, false) {
+    _part_ids.assign(hypergraph.initialNumNodes(), kInvalidPartition, false);
+  }
+
+  explicit PartitionedHypergraph(const PartitionID k,
+                                 const double theta,
+                                 Hypergraph& hypergraph) :
+    _input_num_nodes(hypergraph.initialNumNodes()),
+    _input_num_edges(hypergraph.initialNumEdges()),
+    _input_total_vertex_degree(hypergraph.initialTotalVertexDegree()),
+    _k(k),
+    _theta(theta),
+    _hg(&hypergraph),
+    _target_graph(nullptr),
+    _part_weights(k, CAtomic<HypernodeWeight>(0)),
+    _part_volumes(k, CAtomic<HypernodeWeight>(0)),
+    _part_strengths(k, CAtomic<double>(0)),
+    _edge_size_cnt(hypergraph.maxEdgeSize()+1, CAtomic<HyperedgeID>(0)),
     _part_ids(
       "Refinement", "part_ids", hypergraph.initialNumNodes(), false, false),
     _con_info(hypergraph.initialNumEdges(), k, hypergraph.maxEdgeSize()),
@@ -127,7 +151,9 @@ class PartitionedHypergraph {
     _hg(&hypergraph),
     _target_graph(nullptr),
     _part_weights(k, CAtomic<HypernodeWeight>(0)),
-    _part_volumes(k, CAtomic<double>(0)),
+    _part_volumes(k, CAtomic<HypernodeWeight>(0)),
+    _edge_size_cnt(hypergraph.maxEdgeSize()+1, CAtomic<HyperedgeID>(0)),
+    _part_strengths(k, CAtomic<double>(0)),
     _part_ids(),
     _con_info(),
     _pin_count_update_ownership() {
@@ -165,6 +191,11 @@ class PartitionedHypergraph {
         }, [&] {
           for (auto& x : _part_volumes) x.store(0, std::memory_order_relaxed);
           // for (auto& x : _part_volumes) x = 0.0;
+        }, [&] {
+          for (auto& x : _part_strengths) x.store(0, std::memory_order_relaxed);
+          // for (auto& x : _part_volumes) x = 0.0;
+        },[&] {
+          for (auto& x : _edge_size_cnt) x.store(0, std::memory_order_relaxed);
         });
   }
 
@@ -183,7 +214,9 @@ class PartitionedHypergraph {
   void setK(PartitionID k, HyperedgeID init_num_hyperedges, HypernodeID init_max_he_size) {
     _k = k;
     _part_weights.assign(k, CAtomic<HypernodeWeight>(0));
-    _part_volumes.assign(k, CAtomic<double>(0));
+    _part_volumes.assign(k, CAtomic<HypernodeWeight>(0));
+    _part_strengths.assign(k, CAtomic<double>(0));
+    _edge_size_cnt.assign(_hg->maxEdgeSize()+1, CAtomic<HyperedgeID>(0));
 
     tbb::parallel_invoke([&] { }, [&] {
           _con_info.reset();
@@ -347,6 +380,11 @@ class PartitionedHypergraph {
     return _hg->nodeDegree(u);
   }
 
+  // ! Volume of a hypernode
+  HyperedgeWeight nodeVolume(const HypernodeID u) const {
+    return _hg->nodeVolume(u);
+  }
+
   // ! Strength of a hypernode
   double nodeStrength(const HypernodeID u) const {
     return _hg->nodeStrength(u);
@@ -438,6 +476,15 @@ class PartitionedHypergraph {
     throw NonSupportedOperationException(
             "isSinglePin(e) is only supported on graph data structure");
     return false;
+  }
+
+  HyperedgeID edgeSizeCount(const HypernodeID d) const {
+    const std::size_t idx = static_cast<std::size_t>(d);
+    return (idx < _edge_size_cnt.size()) ? _edge_size_cnt[idx] : 0;
+  }
+
+  HyperedgeID maxEdgeSize() const {
+    return _hg->maxEdgeSize();
   }
 
   // ####################### Uncontraction #######################
@@ -601,7 +648,8 @@ class PartitionedHypergraph {
   void setNodePart(const HypernodeID u, PartitionID p) {
     setOnlyNodePart(u, p);
     _part_weights[p].fetch_add(nodeWeight(u), std::memory_order_relaxed);
-    _part_volumes[p].fetch_add(nodeStrength(u), std::memory_order_relaxed);
+    _part_volumes[p].fetch_add(nodeVolume(u), std::memory_order_relaxed);
+    _part_strengths[p].fetch_add(nodeStrength(u), std::memory_order_relaxed);
 
     for (HyperedgeID he : incidentEdges(u)) {
       incrementPinCountOfBlock(he, p);
@@ -625,15 +673,18 @@ class PartitionedHypergraph {
     ASSERT(force_moving_fixed_vertices || !isFixed(u));
     const HypernodeWeight wu = nodeWeight(u);
     const HypernodeWeight to_weight_after = _part_weights[to].add_fetch(wu, std::memory_order_relaxed);
+    const HypernodeWeight vu = nodeVolume(u);
+    const HypernodeWeight to_volume_after = _part_volumes[to].add_fetch(vu, std::memory_order_relaxed);
     const double su = nodeStrength(u);
-    const double to_degree_after = _part_volumes[to].add_fetch(su, std::memory_order_relaxed);
+    const double to_strength_after = _part_strengths[to].add_fetch(su, std::memory_order_relaxed);
 
-    ASSERT(to_degree_after >= 0.0);
+    ASSERT(to_volume_after >= 0.0);
 
     if (to_weight_after <= max_weight_to) {
       _part_ids[u] = to;
       _part_weights[from].fetch_sub(wu, std::memory_order_relaxed);
-      _part_volumes[from].fetch_sub(su, std::memory_order_relaxed);
+      _part_volumes[from].fetch_sub(vu, std::memory_order_relaxed);
+      _part_strengths[from].fetch_sub(su, std::memory_order_relaxed);
 
       report_success();
       SynchronizedEdgeUpdate sync_update;
@@ -641,12 +692,17 @@ class PartitionedHypergraph {
       sync_update.to = to;
       sync_update.hn = u;
       sync_update.hn_degree = nodeDegree(u);
-      sync_update.hn_strength = su;
+      sync_update.hn_volume = nodeVolume(u);
+      sync_update.hn_strength = nodeStrength(u);
       sync_update.hn_weight = wu;
       sync_update.vol_H = initialTotalVertexDegree();
+      sync_update.vol_H_top = topLevelTotalVertexDegree();
       sync_update.m = initialNumEdges();
+      sync_update.m_top = topLevelNumEdges();
       sync_update.vol_To = _part_volumes[to];
       sync_update.vol_From = _part_volumes[from];
+      sync_update.strength_To = _part_strengths[to];
+      sync_update.strength_From = _part_strengths[from];
       sync_update.weight_From = _part_weights[from];
       sync_update.target_graph = _target_graph;
       sync_update.edge_locks = &_pin_count_update_ownership;
@@ -657,7 +713,8 @@ class PartitionedHypergraph {
       return true;
     } else {
       _part_weights[to].fetch_sub(wu, std::memory_order_relaxed);
-      _part_volumes[to].fetch_sub(su, std::memory_order_relaxed);
+      _part_volumes[to].fetch_sub(vu, std::memory_order_relaxed);
+      _part_strengths[to].fetch_sub(su, std::memory_order_relaxed);
     
       return false;
     }
@@ -714,9 +771,16 @@ class PartitionedHypergraph {
   }
 
   // ! Volume of a block
-  double partVolume(const PartitionID p) const {
+  HypernodeWeight partVolume(const PartitionID p) const {
     ASSERT(p != kInvalidPartition && p < _k);
     return _part_volumes[p].load(std::memory_order_relaxed);
+//    return _part_volumes[p];
+  }
+
+  // ! Strength of a block
+  double partStrength(const PartitionID p) const {
+    ASSERT(p != kInvalidPartition && p < _k);
+    return _part_strengths[p].load(std::memory_order_relaxed);
 //    return _part_volumes[p];
   }
 
@@ -789,6 +853,12 @@ class PartitionedHypergraph {
           initializeBlockVolumes();
         },
       [&] {
+        initializeBlockStrengths();
+      },
+      [&] {
+          initializeEdgeSizeCounts();
+        },
+      [&] {
           initializePinCountInPart();
         }
       );
@@ -799,6 +869,7 @@ class PartitionedHypergraph {
     _part_ids.assign(_part_ids.size(), kInvalidPartition, false);
     for (auto& x : _part_weights) x.store(0, std::memory_order_relaxed);
     for (auto& x : _part_volumes) x.store(0, std::memory_order_relaxed);
+    for (auto& x : _part_strengths) x.store(0, std::memory_order_relaxed);
 //    for (auto& x : _part_volumes) x = 0.0;
 
     // Reset pin count in part and connectivity set
@@ -923,6 +994,10 @@ class PartitionedHypergraph {
 
   double getPiModTheta() const {
     return _theta;
+  }
+
+  bool getClusteringMode() const {
+    return _hg->getClusteringMode();
   }
 
   // ####################### Memory Consumption #######################
@@ -1212,9 +1287,9 @@ class PartitionedHypergraph {
                       );
   }
 
-  void applyPartVolumeUpdates(vec<double>& part_volume_deltas) {
+  void applyPartStrengthUpdates(vec<double>& part_strength_deltas) {
     for (PartitionID p = 0; p < _k; ++p) {
-      _part_volumes[p].fetch_add(part_volume_deltas[p], std::memory_order_relaxed);
+      _part_strengths[p].fetch_add(part_strength_deltas[p], std::memory_order_relaxed);
 
     }
     // ADIL TEST: Double CAtomic Fetch Add and Sub
@@ -1261,14 +1336,42 @@ class PartitionedHypergraph {
     */
   }
 
-  void initializeBlockVolumes() {
+  void initializeBlockStrengths() {
     auto accumulate = [&](tbb::blocked_range<HypernodeID>& r) {
-                        vec<double> pvs(_k, 0); // this is not enumerable_thread_specific because of the static partitioner
+                        vec<double> pss(_k, 0); // this is not enumerable_thread_specific because of the static partitioner
                         for (HypernodeID u = r.begin(); u < r.end(); ++u) {
                           if (nodeIsEnabled(u)) {
                             const PartitionID pu = partID(u);
-                            const double du = nodeStrength(u);
-                            pvs[pu] += du;
+                            const double su = nodeStrength(u);
+                            pss[pu] += su;
+                          }
+                        }
+                        applyPartStrengthUpdates(pss);
+                      };
+
+    tbb::parallel_for(tbb::blocked_range<HypernodeID>(HypernodeID(0), initialNumNodes()),
+                      accumulate,
+                      tbb::static_partitioner()
+                      );
+  }
+
+  void applyPartVolumeUpdates(vec<HypernodeWeight>& part_volume_deltas) {
+    for (PartitionID p = 0; p < _k; ++p) {
+      _part_volumes[p].fetch_add(part_volume_deltas[p], std::memory_order_relaxed);
+
+    }
+  }
+
+  void initializeBlockVolumes() {
+    auto accumulate = [&](tbb::blocked_range<HypernodeID>& r) {
+                        //vec<double> pvs(_k, 0); // this is not enumerable_thread_specific because of the static partitioner
+                        vec<HypernodeWeight> pvs(_k, 0); // this is not enumerable_thread_specific because of the static partitioner
+                        for (HypernodeID u = r.begin(); u < r.end(); ++u) {
+                          if (nodeIsEnabled(u)) {
+                            const PartitionID pu = partID(u);
+                            //const double du = nodeStrength(u);
+                            const HypernodeWeight vu = nodeVolume(u);
+                            pvs[pu] += vu;
                           }
                         }
                         applyPartVolumeUpdates(pvs);
@@ -1279,6 +1382,33 @@ class PartitionedHypergraph {
                       tbb::static_partitioner()
                       );
   }
+
+  void applyEdgeSizeCountUpdates(const vec<HyperedgeID>& deltas) {
+  for (std::size_t d = 0; d < deltas.size(); ++d) {
+    _edge_size_cnt[d].fetch_add(deltas[d], std::memory_order_relaxed);
+  }
+}
+
+  void initializeEdgeSizeCounts() {
+  const HypernodeID max_d = _hg->maxEdgeSize();
+
+  auto accumulate = [&](tbb::blocked_range<HyperedgeID>& r) {
+    vec<HyperedgeID> local(static_cast<std::size_t>(max_d) + 1, 0);
+
+    for (HyperedgeID he = r.begin(); he < r.end(); ++he) {
+      if (_hg->edgeIsEnabled(he)) {
+        const HypernodeID d = _hg->edgeSize(he);
+        ++local[static_cast<std::size_t>(d)];
+      }
+    }
+    applyEdgeSizeCountUpdates(local);                 // atomic add
+  };
+
+  tbb::parallel_for(tbb::blocked_range<HyperedgeID>(HyperedgeID(0),
+                                                    _hg->initialNumEdges()),
+                    accumulate,
+                    tbb::static_partitioner());
+}
 
   void initializePinCountInPart() {
     tls_enumerable_thread_specific<vec<HypernodeID> > ets_pin_count_in_part(_k, 0);
@@ -1373,22 +1503,26 @@ class PartitionedHypergraph {
     double loyalty_To = 0;
     double loyalty_From = 0;
     double computed_edge_weight = 0;
-    size_t pin_idx = 0;
-    size_t hn_pin_idx = 0;
+    // size_t pin_idx = 0;
+    // size_t hn_pin_idx = 0;
     for ( const HypernodeID& pin : pins(e)) {
       if (pin != u) {
         if (partID(pin) == to) {
-          loyalty_To += getNodeStrength(pin_idx, e);
+          // loyalty_To += getNodeStrength(pin_idx, e);
+          loyalty_To += nodeWeight(pin);
         } else if (partID(pin) == from) {
-          loyalty_From += getNodeStrength(pin_idx, e);
+          // loyalty_From += getNodeStrength(pin_idx, e);
+          loyalty_From += nodeWeight(pin);
         }
       } else {
-        hn_pin_idx = pin_idx;
+        // hn_pin_idx = pin_idx;
       }
-      computed_edge_weight += getNodeStrength(pin_idx, e);
-      pin_idx++;
+      // computed_edge_weight += getNodeStrength(pin_idx, e);
+      computed_edge_weight += nodeWeight(pin);
+      // pin_idx++;
     }
-    sync_update.hn_loyalty = getNodeStrength(hn_pin_idx, e);
+    // sync_update.hn_loyalty = getNodeStrength(hn_pin_idx, e);
+    sync_update.hn_loyalty = nodeWeight(u);
     sync_update.loyalty_towards_from_part = loyalty_From;
     sync_update.loyalty_towards_to_part = loyalty_To;
     sync_update.edge_weight_from_nodes = computed_edge_weight;
@@ -1416,7 +1550,8 @@ class PartitionedHypergraph {
   vec<CAtomic<HypernodeWeight> > _part_weights;
 
   // ! Volume and information for all blocks.
-  vec<CAtomic<double> > _part_volumes;
+  vec<CAtomic<double> > _part_strengths;
+  vec<CAtomic<HypernodeWeight> > _part_volumes;
 
   // ! Current block IDs of the vertices
   Array<PartitionID> _part_ids;
@@ -1427,6 +1562,8 @@ class PartitionedHypergraph {
   // ! In order to update the pin count of a hyperedge thread-safe, a thread must acquire
   // ! the ownership of a hyperedge via a CAS operation.
   Array<SpinLock> _pin_count_update_ownership;
+
+  vec<CAtomic<HyperedgeID>> _edge_size_cnt;
 
   // ! PiMod Theta
   double _theta = 0.5;

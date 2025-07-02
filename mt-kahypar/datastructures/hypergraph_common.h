@@ -58,7 +58,8 @@ using HyperedgeID = uint32_t;
 using HypernodeWeight = int32_t;
 using HyperedgeWeight = int32_t;
 using PartitionID = int32_t;
-using Gain = HyperedgeWeight;
+//using Gain = HyperedgeWeight;
+using Gain = double;
 
 // Graph Types
 using NodeID = uint32_t;
@@ -81,7 +82,8 @@ struct Arc {
 static constexpr PartitionID kInvalidPartition = -1;
 static constexpr HypernodeID kInvalidHypernode = std::numeric_limits<HypernodeID>::max();
 static constexpr HypernodeID kInvalidHyperedge = std::numeric_limits<HyperedgeID>::max();
-static constexpr Gain kInvalidGain = std::numeric_limits<HyperedgeID>::min();
+//static constexpr Gain kInvalidGain = std::numeric_limits<HyperedgeID>::min();
+static constexpr Gain kInvalidGain = std::numeric_limits<double>::min();
 static constexpr size_t kEdgeHashSeed = 42;
 
 static constexpr HypernodeID invalidNode = std::numeric_limits<HypernodeID>::max();
@@ -153,8 +155,11 @@ struct SynchronizedEdgeUpdate {
   ds::Array<SpinLock>* edge_locks = nullptr;
   HypernodeID hn = kInvalidHypernode;
   HypernodeID vol_H = kInvalidHypernode;
+  HypernodeID vol_H_top = kInvalidHypernode;
   HyperedgeID m = kInvalidHyperedge;
+  HyperedgeID m_top = kInvalidHyperedge;
   HyperedgeID hn_degree = kInvalidHyperedge;
+  HyperedgeWeight hn_volume = kInvalidPartition;
   HypernodeWeight hn_weight = kInvalidPartition;
   HypernodeWeight weight_From = kInvalidPartition;
   HypernodeID edge_strength = 0;
@@ -162,8 +167,10 @@ struct SynchronizedEdgeUpdate {
   double edge_weight_from_nodes = kInvalidPartition;
   double loyalty_towards_to_part = 0;
   double loyalty_towards_from_part = 0;
-  double vol_To = 0;
-  double vol_From = 0;
+  HypernodeID vol_To = kInvalidHypernode;
+  HypernodeID vol_From = kInvalidHypernode;
+  double strength_To = 0;
+  double strength_From = 0;
   double hn_strength = 0;
   double hn_loyalty = 0;
   double theta = 0.5;

@@ -38,6 +38,7 @@
 
 #include "include/libmtkahypartypes.h"
 
+#include "mt-kahypar/datastructures/hypergraph_common.h"
 #include "mt-kahypar/partition/coarsening/multilevel_coarsener_base.h"
 #include "mt-kahypar/partition/coarsening/multilevel_vertex_pair_rater.h"
 #include "mt-kahypar/partition/coarsening/i_coarsener.h"
@@ -79,6 +80,7 @@ class MultilevelCoarsener : public ICoarsener,
   using AtomicWeight = parallel::IntegralAtomicWrapper<HypernodeWeight>;
   using AtomicID = parallel::IntegralAtomicWrapper<HypernodeID>;
   using AtomicStrength = parallel::IntegralAtomicWrapper<double>;
+  using AtomicVolume = parallel::IntegralAtomicWrapper<HyperedgeWeight>;
   //using AtomicStrength = parallel::AtomicWrapper<double>;
 
   static constexpr bool debug = false;
@@ -99,6 +101,7 @@ class MultilevelCoarsener : public ICoarsener,
     _matching_state(),
     _cluster_weight(),
     _cluster_strength(), //adil
+    _cluster_volume(),
     _matching_partner(),
     _pass_nr(0),
     _progress_bar(utils::cast<Hypergraph>(hypergraph).initialNumNodes(), 0, false),
@@ -115,6 +118,8 @@ class MultilevelCoarsener : public ICoarsener,
     }, [&] {
       _cluster_strength.resize(_hg.initialNumNodes());
     }, [&] {
+      _cluster_volume.resize(_hg.initialNumNodes());
+    }, [&] {
       _matching_partner.resize(_hg.initialNumNodes());
     });
   }
@@ -127,7 +132,7 @@ class MultilevelCoarsener : public ICoarsener,
   ~MultilevelCoarsener() {
     parallel::parallel_free(
       _current_vertices, _matching_state,
-      _cluster_weight, _cluster_strength, _matching_partner);
+      _cluster_weight, _cluster_strength, _cluster_volume, _matching_partner);
   }
 
   void disableRandomization() {
@@ -166,6 +171,7 @@ class MultilevelCoarsener : public ICoarsener,
       if ( current_hg.nodeIsEnabled(hn) ) {
         _cluster_weight[hn] = current_hg.nodeWeight(hn);
         _cluster_strength[hn] = current_hg.nodeStrength(hn);
+        _cluster_volume[hn] = current_hg.nodeVolume(hn);
         //_cluster_strength[hn] = parallel::AtomicWrapper<double>(current_hg.nodeStrength(hn)); //adil
       }
     });
@@ -186,6 +192,7 @@ class MultilevelCoarsener : public ICoarsener,
 
     HEAVY_COARSENING_ASSERT([&] {
       parallel::scalable_vector<HypernodeWeight> expected_weights(current_hg.initialNumNodes());
+      parallel::scalable_vector<HyperedgeWeight> expected_volumes(current_hg.initialNumNodes());
       parallel::scalable_vector<double> expected_strengths(current_hg.initialNumNodes());
       // Verify that clustering is correct
       for ( const HypernodeID& hn : current_hg.nodes() ) {
@@ -197,16 +204,22 @@ class MultilevelCoarsener : public ICoarsener,
           return false;
         }
         expected_weights[root_u] += current_hg.nodeWeight(hn);
+        expected_volumes[root_u] += current_hg.nodeVolume(hn);
         expected_strengths[root_u] += current_hg.nodeStrength(hn);
       }
 
-      // Verify that cluster weights and cluster strengths are aggregated correct
+      // Verify that cluster weights, volumes and cluster strengths are aggregated correct
       for ( const HypernodeID& hn : current_hg.nodes() ) {
         const HypernodeID u = hn;
         const HypernodeID root_u = cluster_ids[u];
         if ( root_u == u && expected_weights[u] != _cluster_weight[u] ) {
           LOG << "The expected weight of cluster" << u << "is" << expected_weights[u]
               << ", but currently it is" << _cluster_weight[u];
+          return false;
+        }
+        if ( root_u == u && expected_volumes[u] != _cluster_volume[u] ) {
+          LOG << "The expected volume of cluster" << u << "is" << expected_volumes[u]
+              << ", but currently it is" << _cluster_volume[u];
           return false;
         }
         // since there can be some rounding errors in double parallel updates, allow for some difference
@@ -217,7 +230,7 @@ class MultilevelCoarsener : public ICoarsener,
         }
       }
       return true;
-    }(), "Parallel clustering computed invalid cluster ids and weights and strengths");
+    }(), "Parallel clustering computed invalid cluster ids and weights, volumes and strengths");
 
     const double reduction_vertices_percentage =
       static_cast<double>(num_hns_before_pass) /
@@ -485,6 +498,7 @@ class MultilevelCoarsener : public ICoarsener,
     bool success = false;
     const HypernodeWeight weight_of_u = hypergraph.nodeWeight(u);
     const HypernodeWeight weight_of_rep = _cluster_weight[rep].load(std::memory_order_relaxed);
+    const HyperedgeWeight volume_of_u = hypergraph.nodeVolume(u);
     const double strength_of_u = hypergraph.nodeStrength(u); //adil clustering
     bool cluster_join_operation_allowed =
       weight_of_u + weight_of_rep <= _context.coarsening.max_allowed_node_weight;
@@ -496,6 +510,7 @@ class MultilevelCoarsener : public ICoarsener,
     if ( cluster_join_operation_allowed ) {
       cluster_ids[u] = rep;
       _cluster_weight[rep].fetch_add(weight_of_u, std::memory_order_relaxed);
+      _cluster_volume[rep].fetch_add(volume_of_u, std::memory_order_relaxed);
       _cluster_strength[rep].fetch_add(strength_of_u, std::memory_order_relaxed); //adil clustering
       //_cluster_strength[rep]+=(parallel::AtomicWrapper<double>(strength_of_u));
       ++contracted_nodes;
@@ -536,6 +551,7 @@ class MultilevelCoarsener : public ICoarsener,
   parallel::scalable_vector<AtomicMatchingState> _matching_state;
   parallel::scalable_vector<AtomicWeight> _cluster_weight;
   parallel::scalable_vector<AtomicStrength> _cluster_strength;
+  parallel::scalable_vector<AtomicVolume> _cluster_volume;
   parallel::scalable_vector<AtomicID> _matching_partner;
   int _pass_nr;
   utils::ProgressBar _progress_bar;

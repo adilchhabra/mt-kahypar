@@ -84,7 +84,7 @@ class Km1GainComputation : public GainComputationBase<Km1GainComputation, Km1Att
     }
   }
 
-  HyperedgeWeight gain(const Gain to_score,
+  Gain gain(const Gain to_score,
                        const Gain isolated_block_gain) {
     return isolated_block_gain - to_score;
   }

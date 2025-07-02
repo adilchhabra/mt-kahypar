@@ -114,6 +114,14 @@ def compute_clustering_metrics(predicted_clusters, ground_truth_clusters):
     }
     return metrics
 
+def print_cluster_info(clusters, label="Clusters"):
+    print(f"\n--- {label} Info ---")
+    counter = Counter(clusters)
+    print(f"Number of clusters: {len(counter)}")
+    print("Cluster sizes:")
+    for cid, size in sorted(counter.items()):
+        print(f"  Cluster {cid}: {size} nodes")
+
 if __name__ == "__main__":
     if len(sys.argv) != 3:
         print("Usage: python script.py <predicted_clusters_file> <ground_truth_clusters_file>")
@@ -125,6 +133,9 @@ if __name__ == "__main__":
     # Read clusters from files
     predicted_clusters = read_clusters_from_file(predicted_file)
     ground_truth_clusters = read_clusters_from_file(ground_truth_file)
+
+    print_cluster_info(predicted_clusters, label="Predicted")
+    print_cluster_info(ground_truth_clusters, label="Ground Truth")
 
     # Compute and print clustering metrics
     scores = compute_clustering_metrics(predicted_clusters, ground_truth_clusters)

@@ -30,6 +30,7 @@
 #include <sstream>
 
 #include "mt-kahypar/definitions.h"
+#include "mt-kahypar/partition/context_enum_classes.h"
 #include "mt-kahypar/partition/metrics.h"
 #include "mt-kahypar/utils/initial_partitioning_stats.h"
 #include "mt-kahypar/utils/stats.h"
@@ -69,6 +70,12 @@ namespace mt_kahypar::io::csv {
     s << metrics::imbalance(phg, context) << sep;
 
     s << context.partition.objective << sep;
+    if(context.partition.preset_type == PresetType::cluster) {
+      auto q = metrics::quality(phg, Objective::pimod);
+      s << context.clustering.theta << sep;
+      s << q << sep;
+      s << q/phg.topLevelNumEdges() << sep;
+    }
     s << metrics::quality(phg, Objective::km1) << sep;
     s << metrics::quality(phg, Objective::cut) << sep;
     s << context.initial_km1 << sep;

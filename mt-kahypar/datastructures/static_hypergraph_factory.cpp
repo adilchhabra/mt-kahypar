@@ -137,6 +137,7 @@ StaticHypergraph StaticHypergraphFactory::construct(const HypernodeID num_hypern
         hypernode.enable();
         hypernode.setFirstEntry(incident_net_prefix_sum[pos]);
         hypernode.setSize(incident_net_prefix_sum.value(pos));
+        hypernode.setVolume(incident_net_prefix_sum.value(pos));
         if (hypernode_weight) {
           hypernode.setWeight(hypernode_weight[pos]);
         }

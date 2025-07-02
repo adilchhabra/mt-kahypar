@@ -84,6 +84,11 @@ MT_KAHYPAR_API void mt_kahypar_set_partitioning_parameters(mt_kahypar_context_t*
                                                            const double epsilon,
                                                            const mt_kahypar_objective_t objective);
 
+/**
+ * Sets all required parameters for a clustering call.
+ */
+MT_KAHYPAR_API void mt_kahypar_set_clustering_parameters(mt_kahypar_context_t* context,
+                                                        const double theta);
 
 /**
  * Initializes the random number generator with the given seed value (not thread-safe).
@@ -362,6 +367,17 @@ MT_KAHYPAR_API mt_kahypar_hyperedge_weight_t mt_kahypar_soed(const mt_kahypar_pa
  */
 MT_KAHYPAR_API mt_kahypar_hyperedge_weight_t mt_kahypar_steiner_tree(const mt_kahypar_partitioned_hypergraph_t partitioned_hg,
                                                                      mt_kahypar_target_graph_t* target_graph);
+
+/**
+ * Computes the pimod metric.
+ */
+MT_KAHYPAR_API mt_kahypar_hyperedge_weight_t mt_kahypar_pimod(const mt_kahypar_partitioned_hypergraph_t partitioned_hg);
+
+
+/**
+ * Computes the hmod metric.
+ */
+MT_KAHYPAR_API mt_kahypar_hyperedge_weight_t mt_kahypar_hmod(const mt_kahypar_partitioned_hypergraph_t partitioned_hg);
 
 
 /**

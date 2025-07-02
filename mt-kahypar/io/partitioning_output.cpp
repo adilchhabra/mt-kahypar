@@ -38,6 +38,7 @@
 #include "mt-kahypar/definitions.h"
 #include "mt-kahypar/parallel/memory_pool.h"
 #include "mt-kahypar/parallel/atomic_wrapper.h"
+#include "mt-kahypar/partition/context_enum_classes.h"
 #include "mt-kahypar/partition/metrics.h"
 #include "mt-kahypar/partition/mapping/target_graph.h"
 #include "mt-kahypar/utils/hypergraph_statistics.h"
@@ -325,8 +326,15 @@ namespace mt_kahypar::io {
                                 const std::string& description) {
     if (context.partition.verbose_output) {
       LOG << description;
+      if(context.partition.objective == Objective::pimod) {
       LOG << context.partition.objective << "      ="
           << metrics::quality(hypergraph, context);
+          LOG << context.partition.objective << "      ="
+          << metrics::quality(hypergraph, context)/static_cast<double>(hypergraph.initialNumEdges());
+      } else {
+        LOG << context.partition.objective << "      ="
+          << metrics::quality(hypergraph, context);
+      }
       LOG << "imbalance =" << metrics::imbalance(hypergraph, context);
       LOG << "Part sizes and weights:";
       io::printPartWeightsAndSizes(hypergraph, context);
@@ -430,6 +438,10 @@ namespace mt_kahypar::io {
     LOG << "Objectives:";
     printKeyValue(context.partition.objective, metrics::quality(hypergraph,
       context), "(primary objective function)");
+    if(context.partition.objective == Objective::pimod) {
+        LOG << "PI Modularity" << "      ="
+        << metrics::quality(hypergraph, context)/static_cast<double>(hypergraph.initialNumEdges());
+    }
     if ( context.partition.objective == Objective::steiner_tree ) {
       printKeyValue("Approximation Factor",
         metrics::approximationFactorForProcessMapping(hypergraph, context));

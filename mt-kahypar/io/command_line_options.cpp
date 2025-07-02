@@ -26,6 +26,8 @@
  ******************************************************************************/
 
 #include "command_line_options.h"
+#include "mt-kahypar/partition/context_enum_classes.h"
+#include <string>
 
 #ifdef _WIN32
 #include <windows.h>
@@ -860,12 +862,12 @@ namespace mt_kahypar {
     po::notify(cmd_vm);
 
     // Validate that blocks is specified if objective is not 'pimod'
-    if (context.partition.objective != Objective::pimod && !cmd_vm.count("blocks")) {
-      throw po::error("The --blocks option is required when the objective is not 'pimod'");
+    if ((context.partition.objective != Objective::pimod && context.partition.objective != Objective::hmod) && !cmd_vm.count("blocks")) {
+      throw po::error("The --blocks option is required when the objective is not 'pimod/hmod'");
     }
 
-    if (context.partition.objective != Objective::pimod && !cmd_vm.count("epsilon")) {
-      throw po::error("The --epsilon option is required when the objective is not 'pimod'");
+    if ((context.partition.objective != Objective::pimod && context.partition.objective != Objective::hmod) && !cmd_vm.count("epsilon")) {
+      throw po::error("The --epsilon option is required when the objective is not 'pimod/hmod'");
     }
 
     po::options_description ini_line_options;
@@ -909,17 +911,23 @@ namespace mt_kahypar {
       context.partition.graph_partition_filename =
               context.partition.graph_filename;
     }
-    context.partition.graph_partition_filename =
-            context.partition.graph_partition_filename
-            + ".part"
-            + std::to_string(context.partition.k)
-            + ".epsilon"
-            + epsilon_str
-            + ".seed"
-            + std::to_string(context.partition.seed)
-            + ".KaHyPar";
-    context.partition.graph_community_filename =
-            context.partition.graph_filename + ".community";
+    if(context.partition.preset_type != PresetType::cluster) {
+        context.partition.graph_partition_filename =
+                context.partition.graph_partition_filename
+                + ".part"
+                + std::to_string(context.partition.k)
+                + ".epsilon"
+                + epsilon_str
+                + ".seed"
+                + std::to_string(context.partition.seed)
+                + ".KaHyPar";
+        context.partition.graph_community_filename =
+                context.partition.graph_filename + ".community";
+    } else {
+        context.partition.graph_partition_filename = context.partition.graph_partition_filename + ".theta" + std::to_string(context.clustering.theta) + ".seed"
+                + std::to_string(context.partition.seed)
+                + ".KaHyPar";
+    }
 
     if (context.partition.deterministic) {
       context.preprocessing.stable_construction_of_incident_edges = true;

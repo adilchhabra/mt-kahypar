@@ -65,7 +65,14 @@ bool LabelPropagationRefiner<GraphAndGainTypes>::moveVertex(PartitionedHypergrap
       PartitionID from = best_move.from;
       PartitionID to = best_move.to;
       Gain delta_before = _gain.localDelta();
-      //HyperedgeWeight old_pi_mod = metrics::quality(hypergraph, _context);
+      // Gain old_pi_mod = metrics::quality(hypergraph, _context);
+      // if(hn == 0) to = 0;
+      // if(hn == 1) to = 0;
+      // if(hn == 2) to = 1;
+      // if(hn == 3) to = 0;
+      // if(hn == 4) to = 1;
+      // if(hn == 5) to  = 1;
+      // if(hn == 6) to = 1;
       bool changed_part = changeNodePart<unconstrained>(hypergraph, hn, from, to, objective_delta);
 
       ASSERT(!unconstrained || changed_part);
@@ -78,16 +85,18 @@ bool LabelPropagationRefiner<GraphAndGainTypes>::moveVertex(PartitionedHypergrap
         Gain move_delta = _gain.localDelta() - delta_before;
         // ADIL TEST 1: Equivalence between Gain and Attributed Gain
         // On 1 Thread (should be equivalent, but some conversion differences are possible)
-        if(_context.shared_memory.num_threads == 1) {
-          ASSERT(std::abs(move_delta - best_move.gain) <= 10000);
-          if(std::abs(move_delta - best_move.gain) > 1000) {
-            LOG << RED << "Gain " << best_move.gain << " != Attributed Gain  "<< move_delta <<" for node " << hn << WHITE;
-          }
-        }
+        // if(_context.shared_memory.num_threads == 1) {
+        //   ASSERT(std::abs(move_delta - best_move.gain) <= 10000);
+        //   if(std::abs(move_delta - best_move.gain) > 1000) {
+        //     LOG << RED << "Gain " << best_move.gain << " != Attributed Gain  "<< move_delta <<" for node " << hn << WHITE;
+        //   }
+        // }
+        //LOG << "Moving " << hn << "from " << best_move.from << " to " << best_move.to << " gives gain " << best_move.gain << " or att = " << move_delta;
+        //move_delta = best_move.gain;
         bool accept_move = (move_delta == best_move.gain || move_delta <= 0);
         if (accept_move) {
-          //HyperedgeWeight new_pi_mod = metrics::quality(hypergraph, _context);
-          //LOG << "Moving " << hn << "from " << best_move.from << " to " << best_move.to << " gives gain " << best_move.gain << " or att = " << move_delta << " and changes pi_mod from " << old_pi_mod << " to " << new_pi_mod << " which gives delta = " << std::abs(new_pi_mod - old_pi_mod);
+          // Gain new_pi_mod = metrics::quality(hypergraph, _context);
+          // LOG << "Moving " << hn << "from " << best_move.from << " to " << best_move.to << " gives gain " << best_move.gain << " or att = " << move_delta << " and changes pi_mod from " << old_pi_mod << " to " << new_pi_mod << " which gives delta = " << std::abs(new_pi_mod - old_pi_mod);
           if constexpr (!unconstrained) {
             // in unconstrained case, we don't want to activate neighbors if the move is undone
             // by the rebalancing
@@ -161,6 +170,7 @@ void LabelPropagationRefiner<GraphAndGainTypes>::labelPropagation(PartitionedHyp
   bool should_stop = false;
   for (size_t i = 0; i < _context.refinement.label_propagation.maximum_iterations &&
        !should_stop && !_active_nodes.empty(); ++i) {
+    // LOG << _context.refinement.label_propagation.maximum_iterations << " and i = " << i;
     should_stop = labelPropagationRound(hypergraph, next_active_nodes, best_metrics, rebalance_moves,
                                         _context.refinement.label_propagation.unconstrained);
 
@@ -188,10 +198,10 @@ bool LabelPropagationRefiner<GraphAndGainTypes>::labelPropagationRound(Partition
     _old_partition_is_balanced = metrics::isBalanced(hypergraph, _context);
     moveActiveNodes<true>(hypergraph, next_active_nodes);
     // here we can recompute the score
-    LOG << "After label propogation iteration quality recomputed: " << metrics::quality(hypergraph, _context);
   } else {
     moveActiveNodes<false>(hypergraph, next_active_nodes);
   }
+  // LOG << "After label propogation iteration quality recomputed: " << metrics::quality(hypergraph, _context);
 
   current_metrics.imbalance = metrics::imbalance(hypergraph, _context);
   current_metrics.quality += _gain.delta();
@@ -241,15 +251,15 @@ bool LabelPropagationRefiner<GraphAndGainTypes>::labelPropagationRound(Partition
     ASSERT(current_metrics.quality <= best_metrics.quality);
   } else {
     if (current_metrics.quality > best_metrics.quality) {
-    LOG << RED << "Current Quality = " << current_metrics.quality << "; Best Quality: " << best_metrics.quality << WHITE;
+    // LOG << RED << "Current Quality = " << current_metrics.quality << "; Best Quality: " << best_metrics.quality << WHITE;
     }
   }
   const Gain old_quality = best_metrics.quality;
   best_metrics = current_metrics;
 
   HEAVY_REFINEMENT_ASSERT(hypergraph.checkTrackedPartitionInformation(_gain_cache));
-  LOG << "Old Quality: " << old_quality << " and Current Quality: " << current_metrics.quality << " and diff: " << std::abs(old_quality - current_metrics.quality);
-  LOG << "Threshold " << _context.refinement.label_propagation.relative_improvement_threshold << " and cap: " << _context.refinement.label_propagation.relative_improvement_threshold * old_quality;
+  // LOG << "Old Quality: " << old_quality << " and Current Quality: " << current_metrics.quality << " and diff: " << std::abs(old_quality - current_metrics.quality);
+  // LOG << "Threshold " << _context.refinement.label_propagation.relative_improvement_threshold << " and cap: " << _context.refinement.label_propagation.relative_improvement_threshold * old_quality;
   return should_stop || std::abs(old_quality - current_metrics.quality) <
          _context.refinement.label_propagation.relative_improvement_threshold * old_quality;
 }
