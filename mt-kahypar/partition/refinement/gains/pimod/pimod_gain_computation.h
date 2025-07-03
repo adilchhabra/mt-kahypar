@@ -83,8 +83,8 @@ public:
 
       // go over all pins of the hyperedge and populate the map with loyalties
       // for each incident cluster
-      // size_t pin_idx = 0;
-      // size_t hn_pin_idx = 0;
+      size_t pin_idx = 0;
+      size_t hn_pin_idx = 0;
       PartitionID clusterID = 0;
       for (const HypernodeID &pin : phg.pins(he)) {
         if (phg.edgeSize(he) == 1 && phg.partID(pin) == from) {
@@ -93,20 +93,20 @@ public:
         if (pin != hn) {
           clusterID = phg.partID(pin);
 
-          // per_cluster_loyalty[clusterID] += phg.getNodeStrength(pin_idx, he);
-          per_cluster_loyalty[clusterID] +=
-              static_cast<double>(phg.nodeWeight(pin));
+          per_cluster_loyalty[clusterID] += phg.getNodeStrength(pin_idx, he);
+          // per_cluster_loyalty[clusterID] +=
+              // static_cast<double>(phg.nodeWeight(pin));
         } else {
-          // hn_pin_idx = pin_idx;
+          hn_pin_idx = pin_idx;
         }
-        // totalEdgeWeight += phg.getNodeStrength(pin_idx, he);
-        totalEdgeWeight += static_cast<double>(phg.nodeWeight(pin));
-        // ++pin_idx;
+        totalEdgeWeight += phg.getNodeStrength(pin_idx, he);
+        // totalEdgeWeight += static_cast<double>(phg.nodeWeight(pin));
+        ++pin_idx;
       }
 
       // loyalty of hyperedge if hn is in its own cluster
-      // double l_1 = phg.getNodeStrength(hn_pin_idx, he) / totalEdgeWeight;
-      double l_1 = static_cast<double>(phg.nodeWeight(hn)) / totalEdgeWeight;
+      double l_1 = phg.getNodeStrength(hn_pin_idx, he) / totalEdgeWeight;
+      // double l_1 = static_cast<double>(phg.nodeWeight(hn)) / totalEdgeWeight;
       // LOG << "l_1 = " << phg.getNodeStrength(hn_pin_idx, he) << " / " <<
       // totalEdgeWeight << " = " << l_1;
       double l_1_rho = compute_loyalty_rho(l_1, totalEdgeWeight, theta);
@@ -189,7 +189,7 @@ public:
     // new_cluster LOG << "Computing deltaPI for node " << hn << " to cluster "
     // << new_cluster;
     auto vol_H = static_cast<double>(phg.initialTotalVertexDegree());
-    auto vol_top_H = static_cast<double>(phg.topLevelTotalVertexDegree());
+    // auto vol_top_H = static_cast<double>(phg.topLevelTotalVertexDegree());
     auto m = static_cast<double>(phg.initialNumEdges());
     // auto m = static_cast<double>(phg.topLevelNumEdges());
     auto m_top = static_cast<double>(phg.topLevelNumEdges());
@@ -199,21 +199,21 @@ public:
     double theta = phg.getPiModTheta();
 
     // volume of new_cluster
-    // double vol_C = phg.partStrength(new_cluster);
-    auto vol_C = static_cast<double>(phg.partVolume(new_cluster));
-    // double eta_C = theta * (1.0 - (vol_C / m_top));
-    double eta_C = theta * (1.0 - (vol_C / vol_top_H));
+    double vol_C = phg.partStrength(new_cluster);
+    // auto vol_C = static_cast<double>(phg.partVolume(new_cluster));
+    double eta_C = theta * (1.0 - (vol_C / m_top));
+    // double eta_C = theta * (1.0 - (vol_C / vol_top_H));
 
     // volume of cluster containing only hn
-    // double vol_hn = phg.nodeStrength(hn);
-    auto vol_hn = static_cast<double>(phg.nodeVolume(hn));
-    // double eta_hn = theta * (1.0 - (vol_hn / m_top));
-    double eta_hn = theta * (1.0 - (vol_hn / vol_top_H));
+    double vol_hn = phg.nodeStrength(hn);
+    // auto vol_hn = static_cast<double>(phg.nodeVolume(hn));
+    double eta_hn = theta * (1.0 - (vol_hn / m_top));
+    // double eta_hn = theta * (1.0 - (vol_hn / vol_top_H));
 
     // volume of new_cluster with hn
     double vol_C_with_hn = vol_C + vol_hn;
-    // double eta_C_with_hn = theta * (1.0 - (vol_C_with_hn / m_top));
-    double eta_C_with_hn = theta * (1.0 - (vol_C_with_hn / vol_top_H));
+    double eta_C_with_hn = theta * (1.0 - (vol_C_with_hn / m_top));
+    // double eta_C_with_hn = theta * (1.0 - (vol_C_with_hn / vol_top_H));
 
     // LOG << "Vol_hn = " << vol_hn << "; Vol_C = " << vol_C << "; Vol_C_with_hn
     // = " << vol_C_with_hn; LOG << "Delta_hn = " <<
@@ -238,7 +238,7 @@ public:
     // new_cluster LOG << "Computing deltaPI for node " << hn << " out from
     // cluster " << old_cluster;
     auto vol_H = static_cast<double>(phg.initialTotalVertexDegree());
-    auto vol_top_H = static_cast<double>(phg.topLevelTotalVertexDegree());
+    // auto vol_top_H = static_cast<double>(phg.topLevelTotalVertexDegree());
     auto m = static_cast<double>(phg.initialNumEdges());
     // auto m = static_cast<double>(phg.topLevelNumEdges());
     auto m_top = static_cast<double>(phg.topLevelNumEdges());
@@ -249,22 +249,22 @@ public:
     double theta = phg.getPiModTheta();
 
     // volume of old_cluster
-    // double vol_C = phg.partStrength(old_cluster);
-    auto vol_C = static_cast<double>(phg.partVolume(old_cluster));
-    // double eta_C = theta * (1.0 - (vol_C / m_top));
-    double eta_C = theta * (1.0 - (vol_C / vol_top_H));
+    double vol_C = phg.partStrength(old_cluster);
+    // auto vol_C = static_cast<double>(phg.partVolume(old_cluster));
+    double eta_C = theta * (1.0 - (vol_C / m_top));
+    // double eta_C = theta * (1.0 - (vol_C / vol_top_H));
     // LOG << "For node " << hn << " with volume " << phg.nodeStrength(hn) << "
     // to cluster " << old_cluster << " vol_C = " << vol_C; volume of cluster
     // containing only hn
-    // double vol_hn = phg.nodeStrength(hn);
-    auto vol_hn = static_cast<double>(phg.nodeVolume(hn));
-    // double eta_hn = theta * (1.0 - (vol_hn / m_top));
-    double eta_hn = theta * (1.0 - (vol_hn / vol_top_H));
+    double vol_hn = phg.nodeStrength(hn);
+    // auto vol_hn = static_cast<double>(phg.nodeVolume(hn));
+    double eta_hn = theta * (1.0 - (vol_hn / m_top));
+    // double eta_hn = theta * (1.0 - (vol_hn / vol_top_H));
 
     // volume of old_cluster without hn
     double vol_C_without_hn = vol_C - vol_hn;
-    // double eta_C_without_hn = theta * (1.0 - (vol_C_without_hn / m_top));
-    double eta_C_without_hn = theta * (1.0 - (vol_C_without_hn / vol_top_H));
+    double eta_C_without_hn = theta * (1.0 - (vol_C_without_hn / m_top));
+    // double eta_C_without_hn = theta * (1.0 - (vol_C_without_hn / vol_top_H));
     // LOG << "Vol_hn = " << vol_hn << "; Vol_C = " << vol_C << ";
     // Vol_C_without_hn = " << vol_C_without_hn; LOG << "Delta_hn = " <<
     // expected_edges_in_cluster(gamma,eta_hn) << "; Delta_C = " <<
@@ -291,7 +291,7 @@ public:
 
   static double compute_loyalty_rho(double loyalty, double totalEdgeWeight,
                                     double threshold) {
-    totalEdgeWeight = 1.0;
+    // totalEdgeWeight = 1.0;
     if (loyalty >= threshold) {
       // return loyalty / std::log2((1.0 / loyalty) + 1.0);
       double log = std::log((1.0 / loyalty) + 1) / std::log(2);

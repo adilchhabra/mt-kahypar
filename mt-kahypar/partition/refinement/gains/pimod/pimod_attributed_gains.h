@@ -37,7 +37,7 @@ namespace mt_kahypar {
  */
 inline double compute_loyalty_rho(double loyalty, double totalEdgeWeight,
                                   double threshold) {
-  totalEdgeWeight = 1.0;
+  // totalEdgeWeight = 1.0;
   if (loyalty >= threshold) {
     // return loyalty / std::log2((1.0 / loyalty) + 1.0);
     double log = std::log((1.0 / loyalty) + 1.0) / std::log(2.0);
@@ -70,33 +70,33 @@ struct PiModAttributedGains {
     auto vol_H = static_cast<double>(sync_update.vol_H);
     auto m = static_cast<double>(sync_update.m);
     auto m_top = static_cast<double>(sync_update.m_top);
-    auto vol_H_top = static_cast<double>(sync_update.vol_H_top);
+    // auto vol_H_top = static_cast<double>(sync_update.vol_H_top);
 
     // Calculate gamma
     const double gamma = (vol_H - 2 * m) / (vol_H - m);
     double theta = sync_update.theta;
 
     // volume of old_cluster (if hn in it)
-    // double vol_C = sync_update.strength_From + sync_update.hn_strength;
-    double vol_C = static_cast<double>(sync_update.vol_From) +
-                   static_cast<double>(sync_update.hn_volume);
-    // double eta_C = theta * (1.0 - (vol_C / m_top));
-    double eta_C = theta * (1.0 - (vol_C / vol_H_top));
+    double vol_C = sync_update.strength_From + sync_update.hn_strength;
+    // double vol_C = static_cast<double>(sync_update.vol_From) +
+                  //  static_cast<double>(sync_update.hn_volume);
+    double eta_C = theta * (1.0 - (vol_C / m_top));
+    // double eta_C = theta * (1.0 - (vol_C / vol_H_top));
     // LOG << "ATT: For node " << sync_update.hn << " with volume " <<
     // sync_update.hn_strength << " to cluster " << sync_update.from << " vol_C
     // = " << vol_C;
 
     // volume of cluster containing only hn
-    // double vol_hn = sync_update.hn_strength;
-    double vol_hn = static_cast<double>(sync_update.hn_volume);
-    // double eta_hn = theta * (1.0 - (vol_hn / m_top));
-    double eta_hn = theta * (1.0 - (vol_hn / vol_H_top));
+    double vol_hn = sync_update.hn_strength;
+    // double vol_hn = static_cast<double>(sync_update.hn_volume);
+    double eta_hn = theta * (1.0 - (vol_hn / m_top));
+    // double eta_hn = theta * (1.0 - (vol_hn / vol_H_top));
 
     // volume of old_cluster without hn
-    // double vol_C_without_hn = sync_update.strength_From;
-    double vol_C_without_hn = static_cast<double>(sync_update.vol_From);
-    // double eta_C_without_hn = theta * (1.0 - (vol_C_without_hn / m_top));
-    double eta_C_without_hn = theta * (1.0 - (vol_C_without_hn / vol_H_top));
+    double vol_C_without_hn = sync_update.strength_From;
+    // double vol_C_without_hn = static_cast<double>(sync_update.vol_From);
+    double eta_C_without_hn = theta * (1.0 - (vol_C_without_hn / m_top));
+    // double eta_C_without_hn = theta * (1.0 - (vol_C_without_hn / vol_H_top));
 
     double change_in_expected_edges =
         (delta_supt_C) + (((expected_edges_in_cluster(gamma, eta_C_without_hn) +
@@ -115,35 +115,35 @@ struct PiModAttributedGains {
     auto vol_H = static_cast<double>(sync_update.vol_H);
     auto m = static_cast<double>(sync_update.m);
     auto m_top = static_cast<double>(sync_update.m_top);
-    auto vol_H_top = static_cast<double>(sync_update.vol_H_top);
+    // auto vol_H_top = static_cast<double>(sync_update.vol_H_top);
 
     // Calculate gamma
     const double gamma = (vol_H - 2 * m) / (vol_H - m);
     double theta = sync_update.theta;
 
     // volume of new_cluster
-    // double vol_C = sync_update.strength_To - sync_update.hn_strength;
-    double vol_C = static_cast<double>(sync_update.vol_To) -
-                   static_cast<double>(sync_update.hn_volume);
-    // double eta_C = theta * (1.0 - (vol_C / m_top));
-    double eta_C = theta * (1.0 - (vol_C / vol_H_top));
+    double vol_C = sync_update.strength_To - sync_update.hn_strength;
+    // double vol_C = static_cast<double>(sync_update.vol_To) -
+                  //  static_cast<double>(sync_update.hn_volume);
+    double eta_C = theta * (1.0 - (vol_C / m_top));
+    // double eta_C = theta * (1.0 - (vol_C / vol_H_top));
     // LOG << "ATT: For node " << sync_update.hn << " with volume " <<
     // sync_update.hn_strength << " to cluster " << sync_update.to << " vol_C =
     // " << vol_C; LOG << "vol_C = " << vol_C << " and eta_C = " << eta_C;
 
     // volume of cluster containing only hn
-    // double vol_hn = sync_update.hn_strength;
-    double vol_hn = static_cast<double>(sync_update.hn_volume);
-    // double eta_hn = theta * (1.0 - (vol_hn / m_top));
-    double eta_hn = theta * (1.0 - (vol_hn / vol_H_top));
+    double vol_hn = sync_update.hn_strength;
+    // double vol_hn = static_cast<double>(sync_update.hn_volume);
+    double eta_hn = theta * (1.0 - (vol_hn / m_top));
+    // double eta_hn = theta * (1.0 - (vol_hn / vol_H_top));
 
     // LOG << "vol_hn = " << vol_hn << " and eta_hn = " << eta_hn;
 
     // volume of new_cluster with hn
-    // double vol_C_with_hn = sync_update.strength_To;
-    double vol_C_with_hn = static_cast<double>(sync_update.vol_To);
-    // double eta_C_with_hn = theta * (1.0 - (vol_C_with_hn / m_top));
-    double eta_C_with_hn = theta * (1.0 - (vol_C_with_hn / vol_H_top));
+    double vol_C_with_hn = sync_update.strength_To;
+    // double vol_C_with_hn = static_cast<double>(sync_update.vol_To);
+    double eta_C_with_hn = theta * (1.0 - (vol_C_with_hn / m_top));
+    // double eta_C_with_hn = theta * (1.0 - (vol_C_with_hn / vol_H_top));
 
     // LOG << "vol_C_with_hn = " << vol_C_with_hn << " and eta_C_with_hn = " <<
     // eta_C_with_hn;

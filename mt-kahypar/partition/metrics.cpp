@@ -88,7 +88,7 @@ inline double loyalty_rho(double l, double tw, double theta) {
   // return 0.0;
   // const double denom = std::log((1.0 / l) + 1.0) / std::log(2.0);
   // return l / denom; // --- FIX ---
-  tw = 1.0;
+  // tw = 1.0;
   if (l >= theta) {
     // return loyalty / std::log2((1.0 / loyalty) + 1.0);
     double log = std::log((1.0 / l) + 1) / std::log(2);
@@ -119,7 +119,7 @@ struct ObjectiveFunction<PartitionedHypergraph, Objective::pimod> {
     // auto vol_H = static_cast<double>(phg.topLevelTotalVertexDegree());
     auto m = static_cast<double>(phg.initialNumEdges());
     auto m_top = static_cast<double>(phg.topLevelNumEdges());
-    auto vol_H_top = static_cast<double>(phg.topLevelTotalVertexDegree());
+    // auto vol_H_top = static_cast<double>(phg.topLevelTotalVertexDegree());
 
     double theta = phg.getPiModTheta();
     double totalEdgeWeight = 0;
@@ -129,25 +129,25 @@ struct ObjectiveFunction<PartitionedHypergraph, Objective::pimod> {
 
     // go over all pins of the hyperedge and populate the map with loyalties for
     // each incident cluster
-    // size_t pin_idx = 0;
+    size_t pin_idx = 0;
     for (const HypernodeID &pin : phg.pins(he)) {
       PartitionID clusterID = phg.partID(pin);
-      // per_cluster_loyalty[clusterID] += phg.getNodeStrength(pin_idx, he);
-      per_cluster_loyalty[clusterID] +=
-          static_cast<double>(phg.nodeWeight(pin));
-      // totalEdgeWeight += phg.getNodeStrength(pin_idx, he);
-      totalEdgeWeight += static_cast<double>(phg.nodeWeight(pin));
-      // pin_idx++;
+      per_cluster_loyalty[clusterID] += phg.getNodeStrength(pin_idx, he);
+      // per_cluster_loyalty[clusterID] +=
+          // static_cast<double>(phg.nodeWeight(pin));
+      totalEdgeWeight += phg.getNodeStrength(pin_idx, he);
+      // totalEdgeWeight += static_cast<double>(phg.nodeWeight(pin));
+      pin_idx++;
     }
 
     for (size_t cluster = 0; cluster < per_cluster_loyalty.size(); cluster++) {
       if (phg.partWeight(cluster) !=
           0) { // check if cluster is non-empty, i.e., it exists
         // Calculate eta for the current cluster C
-        // double vol_C = phg.partStrength(cluster);
-        auto vol_C = static_cast<double>(phg.partVolume(cluster));
-        // double eta = theta * (1.0 - (vol_C / m_top));
-        double eta = theta * (1.0 - (vol_C / vol_H_top));
+        double vol_C = phg.partStrength(cluster);
+        // auto vol_C = static_cast<double>(phg.partVolume(cluster));
+        double eta = theta * (1.0 - (vol_C / m_top));
+        // double eta = theta * (1.0 - (vol_C / vol_H_top));
         // Calculate expected edges in cluster according to Random Hypergraph
         // Expansion Model double expected_edges = (std::pow(1.0 - eta, 2) *
         // std::pow((1.0 + ((gamma * eta) / (1.0 - gamma))),-1))/m;
