@@ -77,6 +77,7 @@ typedef enum {
   SOED,
   PIMOD,
   HMOD,
+  AON_HYPERMODULARITY,
 } mt_kahypar_objective_t;
 
 /**

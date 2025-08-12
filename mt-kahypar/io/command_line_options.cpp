@@ -862,12 +862,12 @@ namespace mt_kahypar {
     po::notify(cmd_vm);
 
     // Validate that blocks is specified if objective is not 'pimod'
-    if ((context.partition.objective != Objective::pimod && context.partition.objective != Objective::hmod) && !cmd_vm.count("blocks")) {
-      throw po::error("The --blocks option is required when the objective is not 'pimod/hmod'");
+    if ((context.partition.objective != Objective::pimod && context.partition.objective != Objective::hmod && context.partition.objective != Objective::aon_hypermodularity) && !cmd_vm.count("blocks")) {
+      throw po::error("The --blocks option is required when the objective is not 'pimod/hmod/aon_hypermodularity'");
     }
 
-    if ((context.partition.objective != Objective::pimod && context.partition.objective != Objective::hmod) && !cmd_vm.count("epsilon")) {
-      throw po::error("The --epsilon option is required when the objective is not 'pimod/hmod'");
+    if ((context.partition.objective != Objective::pimod && context.partition.objective != Objective::hmod && context.partition.objective != Objective::aon_hypermodularity) && !cmd_vm.count("epsilon")) {
+      throw po::error("The --epsilon option is required when the objective is not 'pimod/hmod/aon_hypermodularity'");
     }
 
     po::options_description ini_line_options;

@@ -323,6 +323,14 @@ class PartitionedGraph {
     return _input_unique_ids;
   }
 
+  // ! Max edge size of the input hypergraph
+  HypernodeID topLevelMaxEdgeSize() const {
+    throw NonSupportedOperationException(
+            "topLevelMaxEdgeSize() is only supported on hypergraph data structure");
+    return 0;
+  }
+
+
   // ! Initial number of pins
   HypernodeID initialNumPins() const {
     return _hg->initialNumPins();
@@ -516,6 +524,10 @@ class PartitionedGraph {
   // ! Returns, whether a hyperedge is enabled or not
   bool edgeIsEnabled(const HyperedgeID e) const {
     return _hg->edgeIsEnabled(e);
+  }
+
+  HyperedgeID maxEdgeSize() const {
+    return _hg->maxEdgeSize();
   }
 
   // ####################### Uncontraction #######################
@@ -908,6 +920,27 @@ class PartitionedGraph {
     throw NonSupportedOperationException(
             "getClusteringMode() is not supported for partitioned graph");
     return false;
+  }
+
+  inline double beta (std::size_t k) const { 
+    throw NonSupportedOperationException(
+            "beta(k) is not supported for partitioned graph");
+    return 0.0;
+  }
+  inline double gamma (std::size_t k) const { 
+    throw NonSupportedOperationException(
+            "gamma(k) is not supported for partitioned graph");
+    return 0.0;
+  }
+  inline double omegaIn (std::size_t k) const { 
+    throw NonSupportedOperationException(
+            "omegaIn(k) is not supported for partitioned graph");
+    return 0.0;
+  }
+  inline double omegaOut (std::size_t k) const { 
+    throw NonSupportedOperationException(
+            "omegaOut(k) is not supported for partitioned graph");
+    return 0.0;
   }
 
   // ####################### Memory Consumption #######################

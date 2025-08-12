@@ -95,6 +95,7 @@ REGISTER_POLICY(GainPolicy, GainPolicy::km1, Km1GainTypes);
 REGISTER_POLICY(GainPolicy, GainPolicy::cut, CutGainTypes);
 REGISTER_POLICY(GainPolicy, GainPolicy::pimod, PiModGainTypes);
 REGISTER_POLICY(GainPolicy, GainPolicy::hmod, HModGainTypes);
+REGISTER_POLICY(GainPolicy, GainPolicy::aon_hypermodularity, AONHyperModularityGainTypes);
 #ifdef KAHYPAR_ENABLE_SOED_METRIC
 REGISTER_POLICY(GainPolicy, GainPolicy::soed, SoedGainTypes);
 #endif

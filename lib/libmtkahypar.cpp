@@ -141,6 +141,8 @@ int mt_kahypar_set_context_parameter(mt_kahypar_context_t* context,
           c.partition.objective = Objective::pimod;
         } else if ( objective == "hmod" ) {
           c.partition.objective = Objective::hmod;
+        } else if ( objective == "aon_hypermodularity" ) {
+          c.partition.objective = Objective::aon_hypermodularity;
         }
         return 3;
       }
@@ -172,6 +174,8 @@ void mt_kahypar_set_partitioning_parameters(mt_kahypar_context_t* context,
       c.partition.objective = Objective::pimod; break;
     case HMOD:
       c.partition.objective = Objective::hmod; break;
+    case AON_HYPERMODULARITY:
+      c.partition.objective = Objective::aon_hypermodularity; break;
 
   }
 }
@@ -808,6 +812,25 @@ mt_kahypar_hyperedge_weight_t mt_kahypar_hmod(const mt_kahypar_partitioned_hyper
       return metrics::quality(utils::cast<SparsePartitionedHypergraph>(partitioned_hg), Objective::hmod);
     case MULTILEVEL_HYPERGRAPH_CLUSTERING:
       return metrics::quality(utils::cast<StaticPartitionedHypergraph>(partitioned_hg), Objective::hmod);
+    case NULLPTR_PARTITION: return 0;
+  }
+  return 0;
+}
+
+mt_kahypar_hyperedge_weight_t mt_kahypar_aon_hypermodularity(const mt_kahypar_partitioned_hypergraph_t partitioned_hg) {
+  switch ( partitioned_hg.type ) {
+    case MULTILEVEL_GRAPH_PARTITIONING:
+      return metrics::quality(utils::cast<StaticPartitionedGraph>(partitioned_hg), Objective::aon_hypermodularity);
+    case N_LEVEL_GRAPH_PARTITIONING:
+      return metrics::quality(utils::cast<DynamicPartitionedGraph>(partitioned_hg), Objective::aon_hypermodularity);
+    case MULTILEVEL_HYPERGRAPH_PARTITIONING:
+      return metrics::quality(utils::cast<StaticPartitionedHypergraph>(partitioned_hg), Objective::aon_hypermodularity);
+    case N_LEVEL_HYPERGRAPH_PARTITIONING:
+      return metrics::quality(utils::cast<DynamicPartitionedHypergraph>(partitioned_hg), Objective::aon_hypermodularity);
+    case LARGE_K_PARTITIONING:
+      return metrics::quality(utils::cast<SparsePartitionedHypergraph>(partitioned_hg), Objective::aon_hypermodularity);
+    case MULTILEVEL_HYPERGRAPH_CLUSTERING:
+      return metrics::quality(utils::cast<StaticPartitionedHypergraph>(partitioned_hg), Objective::aon_hypermodularity);
     case NULLPTR_PARTITION: return 0;
   }
   return 0;

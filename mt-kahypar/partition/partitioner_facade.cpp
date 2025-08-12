@@ -28,6 +28,7 @@
 #include "mt-kahypar/partition/partitioner_facade.h"
 
 #include "mt-kahypar/definitions.h"
+#include "mt-kahypar/partition/context_enum_classes.h"
 #include "mt-kahypar/partition/partitioner.h"
 #include "mt-kahypar/io/partitioning_output.h"
 #include "mt-kahypar/io/hypergraph_io.h"
@@ -50,7 +51,7 @@ namespace internal {
     using PartitionedHypergraph = typename TypeTraits::PartitionedHypergraph;
     Hypergraph& hg = utils::cast<Hypergraph>(hypergraph);
 
-    if(context.partition.preset_type == PresetType::cluster) {
+    if(context.partition.objective == Objective::pimod) {
         hg.setClusteringMode(true);
     }
 

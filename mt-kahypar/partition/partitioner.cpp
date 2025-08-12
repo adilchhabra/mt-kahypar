@@ -32,6 +32,7 @@
 
 #include "mt-kahypar/definitions.h"
 #include "mt-kahypar/io/partitioning_output.h"
+#include "mt-kahypar/partition/context_enum_classes.h"
 #include "mt-kahypar/partition/multilevel.h"
 #include "mt-kahypar/partition/preprocessing/sparsification/degree_zero_hn_remover.h"
 #include "mt-kahypar/partition/preprocessing/sparsification/large_he_remover.h"
@@ -252,6 +253,13 @@ namespace mt_kahypar {
   }
 
   template<typename Hypergraph>
+  void precomputeHyperModularityParameters(Hypergraph& hypergraph, Context& context) {
+    if(context.partition.objective != Objective::aon_hypermodularity) return;
+    LOG << "We will now precompute the parameters!";
+    hypergraph.computeAONParameters();
+  }
+
+  template<typename Hypergraph>
   void preprocess(Hypergraph& hypergraph, Context& context, TargetGraph* target_graph) {
     bool use_community_detection = context.preprocessing.use_community_detection;
     bool is_graph = false;
@@ -288,6 +296,8 @@ namespace mt_kahypar {
         io::printCommunityInformation(hypergraph);
       }
     }
+
+    precomputeHyperModularityParameters(hypergraph, context);
 
     precomputeSteinerTrees(hypergraph, target_graph, context);
 

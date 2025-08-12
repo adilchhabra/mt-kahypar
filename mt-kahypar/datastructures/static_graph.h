@@ -874,6 +874,33 @@ class StaticGraph {
     _community_ids = std::move(communities);
   }
 
+  inline void computeAONParameters(double eps = 1e-12) {
+    throw NonSupportedOperationException(
+       "computeAONParameters is not supported in static graph");
+  }
+
+  inline double beta (std::size_t k) const { 
+    throw NonSupportedOperationException(
+            "beta(k) is not supported for static graph");
+    return 0.0;
+  }
+  inline double gamma (std::size_t k) const { 
+    throw NonSupportedOperationException(
+            "gamma(k) is not supported for static graph");
+    return 0.0;
+  }
+  inline double omegaIn (std::size_t k) const { 
+    throw NonSupportedOperationException(
+            "omegaIn(k) is not supported for static graph");
+    return 0.0;
+  }
+  inline double omegaOut (std::size_t k) const { 
+    throw NonSupportedOperationException(
+            "omegaOut(k) is not supported for static graph");
+    return 0.0;
+  }
+
+
   // ! Copy static hypergraph in parallel
   StaticGraph copy(parallel_tag_t) const;
 

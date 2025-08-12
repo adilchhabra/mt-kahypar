@@ -29,7 +29,9 @@
 
 #include <tbb/parallel_for.h>
 
+#include "mt-kahypar/datastructures/hypergraph_common.h"
 #include "mt-kahypar/definitions.h"
+#include "mt-kahypar/partition/context_enum_classes.h"
 #include "mt-kahypar/partition/metrics.h"
 #include "mt-kahypar/partition/refinement/gains/gain_definitions.h"
 #include "mt-kahypar/utils/cast.h"
@@ -65,14 +67,8 @@ bool LabelPropagationRefiner<GraphAndGainTypes>::moveVertex(PartitionedHypergrap
       PartitionID from = best_move.from;
       PartitionID to = best_move.to;
       Gain delta_before = _gain.localDelta();
-      // Gain old_pi_mod = metrics::quality(hypergraph, _context);
-      // if(hn == 0) to = 0;
-      // if(hn == 1) to = 0;
-      // if(hn == 2) to = 1;
-      // if(hn == 3) to = 0;
-      // if(hn == 4) to = 1;
-      // if(hn == 5) to  = 1;
-      // if(hn == 6) to = 1;
+      // Gain old_quality = metrics::quality(hypergraph, _context);
+
       bool changed_part = changeNodePart<unconstrained>(hypergraph, hn, from, to, objective_delta);
 
       ASSERT(!unconstrained || changed_part);
@@ -83,20 +79,11 @@ bool LabelPropagationRefiner<GraphAndGainTypes>::moveVertex(PartitionedHypergrap
         // the solution quality.
 
         Gain move_delta = _gain.localDelta() - delta_before;
-        // ADIL TEST 1: Equivalence between Gain and Attributed Gain
-        // On 1 Thread (should be equivalent, but some conversion differences are possible)
-        // if(_context.shared_memory.num_threads == 1) {
-        //   ASSERT(std::abs(move_delta - best_move.gain) <= 10000);
-        //   if(std::abs(move_delta - best_move.gain) > 1000) {
-        //     LOG << RED << "Gain " << best_move.gain << " != Attributed Gain  "<< move_delta <<" for node " << hn << WHITE;
-        //   }
-        // }
-        //LOG << "Moving " << hn << "from " << best_move.from << " to " << best_move.to << " gives gain " << best_move.gain << " or att = " << move_delta;
-        //move_delta = best_move.gain;
+        
         bool accept_move = (move_delta == best_move.gain || move_delta <= 0);
         if (accept_move) {
-          // Gain new_pi_mod = metrics::quality(hypergraph, _context);
-          // LOG << "Moving " << hn << "from " << best_move.from << " to " << best_move.to << " gives gain " << best_move.gain << " or att = " << move_delta << " and changes pi_mod from " << old_pi_mod << " to " << new_pi_mod << " which gives delta = " << std::abs(new_pi_mod - old_pi_mod);
+          // Gain new_quality= metrics::quality(hypergraph, _context);
+          // LOG << "Moving " << hn << "from " << best_move.from << " to " << best_move.to << " gives gain " << best_move.gain << " or att = " << move_delta << " and changes pi_mod from " << old_quality << " to " << new_quality << " which gives delta = " << std::abs(new_quality - old_quality);
           if constexpr (!unconstrained) {
             // in unconstrained case, we don't want to activate neighbors if the move is undone
             // by the rebalancing
@@ -105,10 +92,6 @@ bool LabelPropagationRefiner<GraphAndGainTypes>::moveVertex(PartitionedHypergrap
         } else {
           // If the real gain is not equal with the computed gain and
           // worsens the solution quality we revert the move.
-
-          // Adil: Ideally for one thread this should never happen, however
-          // due to rounding errors, a move may be reverted 
-          // LOG << RED << "Got rev - att = " << move_delta << " and computed = " << best_move.gain << WHITE;
           ASSERT(hypergraph.partID(hn) == to);
           changeNodePart<unconstrained>(hypergraph, hn, to, from, objective_delta);
         }
@@ -201,7 +184,7 @@ bool LabelPropagationRefiner<GraphAndGainTypes>::labelPropagationRound(Partition
   } else {
     moveActiveNodes<false>(hypergraph, next_active_nodes);
   }
-  // LOG << "After label propogation iteration quality recomputed: " << metrics::quality(hypergraph, _context);
+  LOG << "After label propogation iteration quality recomputed: " << metrics::quality(hypergraph, _context);
 
   current_metrics.imbalance = metrics::imbalance(hypergraph, _context);
   current_metrics.quality += _gain.delta();
@@ -258,8 +241,8 @@ bool LabelPropagationRefiner<GraphAndGainTypes>::labelPropagationRound(Partition
   best_metrics = current_metrics;
 
   HEAVY_REFINEMENT_ASSERT(hypergraph.checkTrackedPartitionInformation(_gain_cache));
-  // LOG << "Old Quality: " << old_quality << " and Current Quality: " << current_metrics.quality << " and diff: " << std::abs(old_quality - current_metrics.quality);
-  // LOG << "Threshold " << _context.refinement.label_propagation.relative_improvement_threshold << " and cap: " << _context.refinement.label_propagation.relative_improvement_threshold * old_quality;
+  LOG << "Old Quality: " << old_quality << " and Current Quality: " << current_metrics.quality << " and diff: " << std::abs(old_quality - current_metrics.quality);
+  LOG << "Threshold " << _context.refinement.label_propagation.relative_improvement_threshold << " and cap: " << _context.refinement.label_propagation.relative_improvement_threshold * old_quality;
   return should_stop || std::abs(old_quality - current_metrics.quality) <
          _context.refinement.label_propagation.relative_improvement_threshold * old_quality;
 }

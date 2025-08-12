@@ -104,6 +104,7 @@ class PartitionedHypergraph {
     _input_num_nodes(hypergraph.initialNumNodes()),
     _input_num_edges(hypergraph.initialNumEdges()),
     _input_total_vertex_degree(hypergraph.initialTotalVertexDegree()),
+    _input_max_edge_size(hypergraph.initialMaxEdgeSize()),
     _k(k),
     _hg(&hypergraph),
     _target_graph(nullptr),
@@ -125,6 +126,7 @@ class PartitionedHypergraph {
     _input_num_nodes(hypergraph.initialNumNodes()),
     _input_num_edges(hypergraph.initialNumEdges()),
     _input_total_vertex_degree(hypergraph.initialTotalVertexDegree()),
+    _input_max_edge_size(hypergraph.initialMaxEdgeSize()),
     _k(k),
     _theta(theta),
     _hg(&hypergraph),
@@ -147,6 +149,7 @@ class PartitionedHypergraph {
     _input_num_nodes(hypergraph.initialNumNodes()),
     _input_num_edges(hypergraph.initialNumEdges()),
     _input_total_vertex_degree(hypergraph.initialTotalVertexDegree()),
+    _input_max_edge_size(hypergraph.initialMaxEdgeSize()),
     _k(k),
     _hg(&hypergraph),
     _target_graph(nullptr),
@@ -253,6 +256,11 @@ class PartitionedHypergraph {
   // ! Number of unique edge ids of the input hypergraph
   HyperedgeID topLevelNumUniqueIds() const {
     return _input_num_edges;
+  }
+
+  // ! Number of edges of the input hypergraph
+  HyperedgeID topLevelMaxEdgeSize() const {
+    return _input_max_edge_size;
   }
 
   // ! Initial number of pins
@@ -706,6 +714,9 @@ class PartitionedHypergraph {
       sync_update.weight_From = _part_weights[from];
       sync_update.target_graph = _target_graph;
       sync_update.edge_locks = &_pin_count_update_ownership;
+      sync_update.beta_vec = &betaVector();        // constant for the whole move
+      sync_update.gamma_vec = &gammaVector();
+      sync_update.max_edge_size = topLevelMaxEdgeSize();      // same for every edge
       sync_update.theta = _theta; //ADIL Clustering
       for ( const HyperedgeID he : incidentEdges(u)) {
         updatePinCountOfHyperedge(he, u, from, to, sync_update, delta_func, notify_func);
@@ -999,6 +1010,22 @@ class PartitionedHypergraph {
   bool getClusteringMode() const {
     return _hg->getClusteringMode();
   }
+
+  // ═══ AON PARAMETER FORWARDERS ──────────────────────────────────────────────
+  //  Access βk , γk , ωin/out(k) directly from a PartitionedHypergraph
+  //  without exposing the whole vectors.
+  inline double beta   (std::size_t k) const { 
+    // LOG << "Asked for beta for " << k;
+    return _hg->beta   (k); 
+  }
+  inline double gamma  (std::size_t k) const { return _hg->gamma  (k); }
+  inline double omegaIn (std::size_t k) const { return _hg->omegaIn (k); }
+  inline double omegaOut(std::size_t k) const { return _hg->omegaOut(k); }
+
+  //  full vectors – used by the attributed-gain code
+  inline const vec<double>& betaVector()  const { return _hg->_beta;  }
+  inline const vec<double>& gammaVector() const { return _hg->_gamma; }
+
 
   // ####################### Memory Consumption #######################
 
@@ -1411,6 +1438,7 @@ class PartitionedHypergraph {
 }
 
   void initializePinCountInPart() {
+    LOG << "Init pin count: k = " << _k;
     tls_enumerable_thread_specific<vec<HypernodeID> > ets_pin_count_in_part(_k, 0);
 
     auto assign = [&](tbb::blocked_range<HyperedgeID>& r) {
@@ -1533,6 +1561,9 @@ class PartitionedHypergraph {
 
   // ! Number of hyperedges of the top level hypergraph
   HyperedgeID _input_num_edges = 0;
+
+  // ! Maximum edge size of the top level hypergraph
+  HyperedgeID _input_max_edge_size = 0;
 
   // ! Volume of the top level hypergraph
   HyperedgeID _input_total_vertex_degree = 0;

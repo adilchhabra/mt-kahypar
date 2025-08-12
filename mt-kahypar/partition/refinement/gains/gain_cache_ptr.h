@@ -69,7 +69,9 @@ class GainCachePtr {
       case GainPolicy::pimod:
         return function(cast<Km1GainCache>(gain_cache));
       case GainPolicy::hmod:
-        return function(cast<Km1GainCache>(gain_cache));  
+        return function(cast<Km1GainCache>(gain_cache)); 
+      case GainPolicy::aon_hypermodularity:
+        return function(cast<Km1GainCache>(gain_cache)); 
       case GainPolicy::soed:
       #ifdef KAHYPAR_ENABLE_SOED_METRIC
         return function(cast<SoedGainCache>(gain_cache));
@@ -117,6 +119,8 @@ class GainCachePtr {
           return function(cast<Km1GainCache>(gain_cache));
         case GainPolicy::hmod:
           return function(cast<Km1GainCache>(gain_cache));
+        case GainPolicy::aon_hypermodularity:
+          return function(cast<Km1GainCache>(gain_cache));
         #ifdef KAHYPAR_ENABLE_SOED_METRIC
         case GainPolicy::soed:
           return function(cast<SoedGainCache>(gain_cache));
@@ -137,6 +141,7 @@ class GainCachePtr {
       case GainPolicy::km1: return constructGainCache<Km1GainCache>(context);
       case GainPolicy::pimod: return constructGainCache<Km1GainCache>(context);
       case GainPolicy::hmod: return constructGainCache<Km1GainCache>(context);
+      case GainPolicy::aon_hypermodularity: return constructGainCache<Km1GainCache>(context);
       #ifdef KAHYPAR_ENABLE_SOED_METRIC
       case GainPolicy::soed: return constructGainCache<SoedGainCache>(context);
       #endif

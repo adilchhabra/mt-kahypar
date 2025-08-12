@@ -347,7 +347,7 @@ StaticHypergraph::contract(parallel::scalable_vector<HypernodeID> &communities,
                 high_degree_vertices.push_back(coarse_hn);
               }
               tmp_hypernodes[coarse_hn].setWeight(hn_weights[coarse_hn]);
-              // tmp_hypernodes[coarse_hn].setVolume(hn_volumes[coarse_hn]);
+              tmp_hypernodes[coarse_hn].setVolume(hn_volumes[coarse_hn]);
               tmp_hypernodes[coarse_hn].setStrength(
                   hn_strengths[coarse_hn]); // adil clustering
               tmp_hypernodes[coarse_hn].setFirstEntry(incident_nets_start);
@@ -656,11 +656,11 @@ StaticHypergraph::contract(parallel::scalable_vector<HypernodeID> &communities,
     tbb::parallel_for(ID(0), num_hypernodes, [&](const HypernodeID &id) {
       const size_t incident_nets_start = tmp_hypernodes[id].firstEntry();
       size_t incident_nets_end = tmp_hypernodes[id].firstInvalidEntry();
-      HyperedgeWeight vol = 0;
+      // HyperedgeWeight vol = 0; // Adil: If volume is actual degree
       for (size_t pos = incident_nets_start; pos < incident_nets_end; ++pos) {
         const HyperedgeID he = tmp_incident_nets[pos];
         if (he_mapping.value(he) > 0 /* hyperedge is valid */) {
-          vol += tmp_hyperedges[he].weight(); // <--  NEW
+          // vol += tmp_hyperedges[he].weight(); // <--  NEW
           tmp_incident_nets[pos] = he_mapping[he];
         } else {
           std::swap(tmp_incident_nets[pos--],
@@ -669,7 +669,7 @@ StaticHypergraph::contract(parallel::scalable_vector<HypernodeID> &communities,
       }
       const size_t incident_nets_size = incident_nets_end - incident_nets_start;
       tmp_hypernodes[id].setSize(incident_nets_size);
-      tmp_hypernodes[id].setVolume(vol);          // <--  NEW
+      // tmp_hypernodes[id].setVolume(vol);          // <--  NEW 
       tmp_num_incident_nets[id] = incident_nets_size;
     });
 
@@ -758,6 +758,9 @@ StaticHypergraph StaticHypergraph::copy(parallel_tag_t) const {
                sizeof(double) * _incident_strength_array.size());
       },
       [&] { hypergraph._community_ids = _community_ids; },
+      [&] { hypergraph._beta = _beta; },
+      [&] { hypergraph._gamma = _gamma; },
+      [&] { hypergraph._omega = _omega; },
       [&] { hypergraph.addFixedVertexSupport(_fixed_vertices.copy()); });
   return hypergraph;
 }
@@ -790,6 +793,9 @@ StaticHypergraph StaticHypergraph::copy() const {
          sizeof(HypernodeID) * _incidence_array.size());
 
   hypergraph._community_ids = _community_ids;
+  hypergraph._beta = _beta;
+  hypergraph._gamma = _gamma;
+  hypergraph._omega = _omega;
   hypergraph.addFixedVertexSupport(_fixed_vertices.copy());
 
   return hypergraph;

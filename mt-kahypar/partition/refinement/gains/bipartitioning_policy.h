@@ -46,6 +46,7 @@ struct BipartitioningPolicy {
       case GainPolicy::steiner_tree_for_graphs: return false;
       case GainPolicy::pimod: return true;
       case GainPolicy::hmod: return true;
+      case GainPolicy::aon_hypermodularity: return true;
       case GainPolicy::none: throw InvalidParameterException("Gain policy is unknown");
     }
     throw InvalidParameterException("Gain policy is unknown");
@@ -62,6 +63,7 @@ struct BipartitioningPolicy {
       case GainPolicy::steiner_tree_for_graphs: return 1;
       case GainPolicy::pimod: return 1;
       case GainPolicy::hmod: return 1;
+      case GainPolicy::aon_hypermodularity: return 1;
       case GainPolicy::none: throw InvalidParameterException("Gain policy is unknown");
     }
     throw InvalidParameterException("Gain policy is unknown");

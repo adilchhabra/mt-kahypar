@@ -32,6 +32,7 @@
 
 #include <tbb/enumerable_thread_specific.h>
 
+#include "mt-kahypar/partition/context_enum_classes.h"
 #include "mt-kahypar/partition/metrics.h"
 #include "mt-kahypar/partition/context.h"
 #include "mt-kahypar/utils/randomize.h"
@@ -133,6 +134,13 @@ class GainComputationBase {
   // ! reset()
   Gain localDelta() {
     return _deltas.local();
+  }
+
+  Gain aonVolume(const SynchronizedEdgeUpdate& sync_update) {
+    if(_context.partition.objective == Objective::aon_hypermodularity) {
+      return AttributedGains::volumeDelta(sync_update);
+    }
+    return 0;
   }
 
   void setLocalDelta(Gain moveGain) {

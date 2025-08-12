@@ -174,6 +174,12 @@ struct SynchronizedEdgeUpdate {
   double hn_strength = 0;
   double hn_loyalty = 0;
   double theta = 0.5;
+  //! Pointers / views to the *global* βₖ and γₖ arrays of the **current
+  //! hierarchy level**.  They never change during the whole node move, so a
+  //! (const) pointer is enough and avoids copying the vectors for every edge.
+  const vec<double>* beta_vec        = nullptr;    // same object for all edges
+  const vec<double>* gamma_vec       = nullptr;
+  HyperedgeID max_edge_size = kInvalidHyperedge;
 };
 
 struct NoOpDeltaFunc {

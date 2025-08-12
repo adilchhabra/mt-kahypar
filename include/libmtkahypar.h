@@ -379,6 +379,11 @@ MT_KAHYPAR_API mt_kahypar_hyperedge_weight_t mt_kahypar_pimod(const mt_kahypar_p
  */
 MT_KAHYPAR_API mt_kahypar_hyperedge_weight_t mt_kahypar_hmod(const mt_kahypar_partitioned_hypergraph_t partitioned_hg);
 
+/**
+ * Computes the aon hypermodularity metric.
+ */
+MT_KAHYPAR_API mt_kahypar_hyperedge_weight_t mt_kahypar_aon_hypermodularity(const mt_kahypar_partitioned_hypergraph_t partitioned_hg);
+
 
 /**
  * Deletes the partitioned (hyper)graph object.

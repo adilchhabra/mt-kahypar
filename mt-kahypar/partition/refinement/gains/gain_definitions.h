@@ -46,6 +46,8 @@
 #include "mt-kahypar/partition/refinement/gains/pimod/pimod_attributed_gains.h"
 #include "mt-kahypar/partition/refinement/gains/hmod/hmod_gain_computation.h"
 #include "mt-kahypar/partition/refinement/gains/hmod/hmod_attributed_gains.h"
+#include "mt-kahypar/partition/refinement/gains/aon_hypermodularity/aon_hypermodularity_gain_computation.h"
+#include "mt-kahypar/partition/refinement/gains/aon_hypermodularity/aon_hypermodularity_attributed_gains.h"
 #ifdef KAHYPAR_ENABLE_SOED_METRIC
 #include "mt-kahypar/partition/refinement/gains/soed/soed_attributed_gains.h"
 #include "mt-kahypar/partition/refinement/gains/soed/soed_gain_computation.h"
@@ -104,6 +106,15 @@ struct PiModGainTypes : public kahypar::meta::PolicyBase {
 struct HModGainTypes : public kahypar::meta::PolicyBase {
     using GainComputation = HModGainComputation;
     using AttributedGains = HModAttributedGains;
+    using GainCache = Km1GainCache;
+    using DeltaGainCache = DeltaKm1GainCache;
+    using Rollback = Km1Rollback;
+    using FlowNetworkConstruction = Km1FlowNetworkConstruction;
+};
+
+struct AONHyperModularityGainTypes : public kahypar::meta::PolicyBase {
+    using GainComputation = AONHyperModularityGainComputation;
+    using AttributedGains = AONHyperModularityAttributedGains;
     using GainCache = Km1GainCache;
     using DeltaGainCache = DeltaKm1GainCache;
     using Rollback = Km1Rollback;
@@ -174,7 +185,8 @@ struct GraphAndGainTypes : public kahypar::meta::PolicyBase {
 using GainTypes = kahypar::meta::Typelist<Km1GainTypes,
                                           CutGainTypes,
                                           PiModGainTypes,
-                                          HModGainTypes
+                                          HModGainTypes,
+                                          AONHyperModularityGainTypes
                                           ENABLE_SOED(COMMA SoedGainTypes)
                                           ENABLE_STEINER_TREE(COMMA SteinerTreeGainTypes)
                                           ENABLE_GRAPHS(COMMA CutGainForGraphsTypes)
@@ -184,7 +196,8 @@ using GainTypes = kahypar::meta::Typelist<Km1GainTypes,
   GraphAndGainTypes<TYPE_TRAITS, Km1GainTypes>,                                           \
   GraphAndGainTypes<TYPE_TRAITS, CutGainTypes>,                                         \
   GraphAndGainTypes<TYPE_TRAITS, PiModGainTypes>,                                            \
-  GraphAndGainTypes<TYPE_TRAITS, HModGainTypes>                                            \
+  GraphAndGainTypes<TYPE_TRAITS, HModGainTypes>,                                            \
+  GraphAndGainTypes<TYPE_TRAITS, AONHyperModularityGainTypes>                                            \
   ENABLE_SOED(COMMA GraphAndGainTypes<TYPE_TRAITS COMMA SoedGainTypes>)                   \
   ENABLE_STEINER_TREE(COMMA GraphAndGainTypes<TYPE_TRAITS COMMA SteinerTreeGainTypes>)
 
@@ -204,6 +217,7 @@ using GraphAndGainTypesList = kahypar::meta::Typelist<_LIST_HYPERGRAPH_COMBINATI
   template class C(GraphAndGainTypes<TYPE_TRAITS COMMA CutGainTypes>);                        \
   template class C(GraphAndGainTypes<TYPE_TRAITS COMMA PiModGainTypes>);                                \
   template class C(GraphAndGainTypes<TYPE_TRAITS COMMA HModGainTypes>);                                \
+  template class C(GraphAndGainTypes<TYPE_TRAITS COMMA AONHyperModularityGainTypes>);                                \
   ENABLE_SOED(template class C(GraphAndGainTypes<TYPE_TRAITS COMMA SoedGainTypes>);)                  \
   ENABLE_STEINER_TREE(template class C(GraphAndGainTypes<TYPE_TRAITS COMMA SteinerTreeGainTypes>);)
 
@@ -232,6 +246,7 @@ using GraphAndGainTypesList = kahypar::meta::Typelist<_LIST_HYPERGRAPH_COMBINATI
     case GainPolicy::cut: _RETURN_COMBINED_POLICY(TYPE_TRAITS, CutGainTypes)                  \
     case GainPolicy::pimod: _RETURN_COMBINED_POLICY(TYPE_TRAITS, PiModGainTypes)              \
     case GainPolicy::hmod: _RETURN_COMBINED_POLICY(TYPE_TRAITS, HModGainTypes)              \
+    case GainPolicy::aon_hypermodularity: _RETURN_COMBINED_POLICY(TYPE_TRAITS, AONHyperModularityGainTypes)              \
     case GainPolicy::soed: ENABLE_SOED(_RETURN_COMBINED_POLICY(TYPE_TRAITS, SoedGainTypes))   \
     case GainPolicy::steiner_tree:                                                            \
       ENABLE_STEINER_TREE(_RETURN_COMBINED_POLICY(TYPE_TRAITS, SteinerTreeGainTypes))         \

@@ -130,7 +130,6 @@ namespace {
       if ( context.initial_partitioning.remove_degree_zero_hns_before_ip ) {
         degree_zero_hn_remover.removeDegreeZeroHypernodes(phg.hypergraph());
       }
-
       Context ip_context(context);
       ip_context.type = ContextType::initial_partitioning;
       ip_context.refinement = context.initial_partitioning.refinement;

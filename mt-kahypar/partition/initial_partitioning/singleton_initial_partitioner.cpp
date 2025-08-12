@@ -69,6 +69,8 @@ void SingletonInitialPartitioner<TypeTraits>::partitionImpl() {
           }
       }
 
+      LOG << "Finished IP";
+
       HighResClockTimepoint end = std::chrono::high_resolution_clock::now();
       double time = std::chrono::duration<double>(end - start).count();
       _ip_data.commit(InitialPartitioningAlgorithm::singleton, _rng, _tag, time);

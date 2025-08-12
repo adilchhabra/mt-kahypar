@@ -33,6 +33,7 @@
 
 #include "mt-kahypar/datastructures/hypergraph_common.h"
 #include "mt-kahypar/definitions.h"
+#include "mt-kahypar/partition/context_enum_classes.h"
 #include "mt-kahypar/partition/mapping/target_graph.h"
 #include "mt-kahypar/partition/refinement/gains/pimod/pimod_attributed_gains.h"
 #include "mt-kahypar/utils/exception.h"
@@ -189,6 +190,58 @@ struct ObjectiveFunction<PartitionedHypergraph, Objective::pimod> {
     return -1 * pi_mod_contribution;
   }
 };
+
+template <typename PartitionedHypergraph>
+struct ObjectiveFunction<PartitionedHypergraph, Objective::aon_hypermodularity> {
+  Gain operator()(const PartitionedHypergraph &phg,
+                  const HyperedgeID &he) const {
+    std::size_t k = static_cast<std::size_t>(phg.edgeStrength(he) );
+    // LOG << "Hyperedge " << he << " with size " << k;
+    if (k < 2) {
+      LOG << RED << "Size 1 edge??";
+      return 0;                               // ignore size-1 edges
+    }
+    if (phg.connectivity(he) == 1) return 0;           // not cut
+
+    double beta_k = phg.beta(k);                        // β_k from finest level
+    double w_e    = static_cast<double>(phg.edgeWeight(he));
+    // LOG << " returns weights = " << w_e << " times " << beta_k;
+    return static_cast<Gain>(w_e * beta_k );
+  }
+};
+
+template <typename PartitionedHypergraph>
+Gain aonVolumeTerm(const PartitionedHypergraph& phg)
+{
+  const std::size_t dmax = static_cast<std::size_t>(phg.topLevelMaxEdgeSize());
+  if (dmax < 2) return 0.0;
+
+  /* cluster volumes */
+  // PartitionID L = 0;
+  // for (auto v : phg.nodes())
+  //   L = std::max<PartitionID>(L, phg.partID(v));
+  // ++L;
+
+  // std::vector<double> Vol(L, 0.0);
+  // for (auto v : phg.nodes())
+  //   Vol[phg.partID(v)] += static_cast<double>(phg.nodeDegree(v) );
+
+  double term = 0.0;
+  for (std::size_t d = 2; d <= dmax; ++d) {
+    // LOG << "For edge size d = " << d << ": beta_d = " << phg.beta(d) << ", gamma_d = " << phg.gamma(d);
+    double inner = 0.0;
+    // double inner_alt = 0.0;
+    // for (double vc : Vol) inner += std::pow(vc, static_cast<int>(d));
+    for (auto c = 0; c < phg.k(); ++c) {
+      inner += std::pow(phg.partVolume(c), static_cast<int>(d));
+    }
+    // if(inner != inner_alt) {
+      // LOG << RED << "Inner = " << inner << "; inner alt = " << inner_alt << WHITE;
+    // }
+    term += phg.beta(d) * phg.gamma(d) * inner;
+  }
+  return term;
+}
 
 inline double binomPMF(const HypernodeID k, const HypernodeID n,
                        const double p) {
@@ -501,7 +554,12 @@ Gain compute_objective_parallel(const PartitionedHypergraph &phg) {
   tbb::enumerable_thread_specific<Gain> obj(0);
   phg.doParallelForAllEdges(
       [&](const HyperedgeID he) { obj.local() += func(phg, he); });
-  return obj.combine(std::plus<>()) / (PartitionedHypergraph::is_graph ? 2 : 1);
+  if(objective != Objective::aon_hypermodularity) {
+    return obj.combine(std::plus<>()) / (PartitionedHypergraph::is_graph ? 2 : 1);
+  }
+  Gain edge_sum = obj.combine(std::plus<>());
+  Gain Q = edge_sum + aonVolumeTerm(phg);
+  return Q;
 }
 
 template <Objective objective, typename PartitionedHypergraph>
@@ -550,6 +608,9 @@ Gain quality(const PartitionedHypergraph &hg, const Objective objective,
   case Objective::hmod:
     return parallel ? compute_objective_parallel<Objective::hmod>(hg)
                     : compute_objective_sequentially<Objective::hmod>(hg);
+  case Objective::aon_hypermodularity:
+    return parallel ? compute_objective_parallel<Objective::aon_hypermodularity>(hg)
+                    : compute_objective_sequentially<Objective::aon_hypermodularity>(hg);
   default:
     throw InvalidParameterException("Unknown Objective");
   }
@@ -572,6 +633,8 @@ Gain contribution(const PartitionedHypergraph &hg, const HyperedgeID he,
     return contribution<Objective::pimod>(hg, he);
   case Objective::hmod:
     return contribution<Objective::hmod>(hg, he);
+  case Objective::aon_hypermodularity:
+    return contribution<Objective::aon_hypermodularity>(hg, he);
   default:
     throw InvalidParameterException("Unknown Objective");
   }
