@@ -62,7 +62,6 @@ struct AONHyperModularityAttributedGains {
 
   static Gain volumeDelta(const SynchronizedEdgeUpdate &sync_update) {
     Gain dVol = 0;
-    const vec<double> &beta = *sync_update.beta_vec;
     const vec<double> &gamma = *sync_update.gamma_vec;
     const double v_from = static_cast<double>(
         sync_update.vol_From + sync_update.hn_volume); // volume *before*
@@ -73,15 +72,16 @@ struct AONHyperModularityAttributedGains {
 
     for (std::size_t d = 2; d <= sync_update.max_edge_size; ++d) {
 
-      const double b = beta[d];
       const double g = gamma[d];
-      if (g == 0.0)
+      if (g == 0.0) {
         continue;
+      }
 
-      const double delta = std::pow(v_from - dv, int(d)) +
-                           std::pow(v_to + dv, int(d)) -
-                           std::pow(v_from, int(d)) - std::pow(v_to, int(d));
-      dVol += b * g * delta;
+      const double delta = std::pow(v_from - dv, static_cast<int>(d)) +
+                           std::pow(v_to + dv, static_cast<int>(d)) -
+                           std::pow(v_from, static_cast<int>(d)) -
+                           std::pow(v_to, static_cast<int>(d));
+      dVol += g * delta;
     }
     return dVol;
   }

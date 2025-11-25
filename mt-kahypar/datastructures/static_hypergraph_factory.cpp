@@ -103,11 +103,14 @@ StaticHypergraph StaticHypergraphFactory::construct(const HypernodeID num_hypern
                                        parallel::IntegralAtomicWrapper<size_t>(0));
 
   auto setup_hyperedges = [&] {
-                            tbb::parallel_for(ID(0), num_hyperedges, [&](const size_t pos) {
+    tbb::parallel_for(ID(0), num_hyperedges, [&](const size_t pos) {
         StaticHypergraph::Hyperedge& hyperedge = hypergraph._hyperedges[pos];
         hyperedge.enable();
         hyperedge.setFirstEntry(pin_prefix_sum[pos]);
         hyperedge.setSize(pin_prefix_sum.value(pos));
+        // Remember the original cardinality before contractions so that
+        // coarse copies can still access their finest-level size (needed by AON).
+        hyperedge.setTopLevelSize(pin_prefix_sum.value(pos));
         if (hyperedge_weight) {
           hyperedge.setWeight(hyperedge_weight[pos]);
         }

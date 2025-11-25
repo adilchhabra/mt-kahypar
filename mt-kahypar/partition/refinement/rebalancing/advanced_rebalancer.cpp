@@ -410,7 +410,7 @@ namespace impl {
 
         _moves[move_id] = m;
       }
-      std::atomic_ref<Gain>(attributed_gain).fetch_add(local_attributed_gain, std::memory_order_relaxed);
+      attributed_gain += local_attributed_gain;
       //__atomic_fetch_add(&attributed_gain, local_attributed_gain, __ATOMIC_RELAXED);
     };
 

@@ -80,7 +80,10 @@ public:
     vec<double> cut_scores(_context.partition.k, 0.0); // 1 slot / block
 
     for (const HyperedgeID he : phg.incidentEdges(hn)) {
-      const std::size_t d = static_cast<std::size_t>(phg.edgeStrength(he));
+      std::size_t d = static_cast<std::size_t>(phg.edgeSize(he));
+      if constexpr (!PartitionedHypergraph::is_graph) {
+        d = static_cast<std::size_t>(phg.topLevelEdgeSize(he));
+      }
       // HypernodeID computed_size = 0;
       // for (HypernodeID pin : phg.pins(he)) {
       //   computed_size += phg.nodeWeight(pin);
@@ -127,15 +130,16 @@ public:
       /* ---- ΔVol -------------------------------------------------- */
       double dVol = 0.0;
       for (std::size_t d = 2; d <= d_max; ++d) {
-        double g = phg.gamma(d);
-        double b = phg.beta(d);
-        if (g == 0.0)
+        const double g = phg.gamma(d);
+        if (g == 0.0) {
           continue;
+        }
         double vol_to = static_cast<double>(phg.partVolume(to));
-        double delta = std::pow(vol_from - dv, (int)d) +
-                       std::pow(vol_to + dv, (int)d) -
-                       std::pow(vol_from, (int)d) - std::pow(vol_to, (int)d);
-        dVol += (b * g) * delta; // <- sign fixed here
+        double delta = std::pow(vol_from - dv, static_cast<int>(d)) +
+                       std::pow(vol_to + dv, static_cast<int>(d)) -
+                       std::pow(vol_from, static_cast<int>(d)) -
+                       std::pow(vol_to, static_cast<int>(d));
+        dVol += g * delta; // <- sign fixed here
       }
 
       /* ---- ΔCut -------------------------------------------------- */

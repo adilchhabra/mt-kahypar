@@ -97,6 +97,8 @@ DynamicHypergraph DynamicHypergraphFactory::construct(
       hyperedge.enable();
       hyperedge.setFirstEntry(pin_prefix_sum[pos]);
       hyperedge.setSize(pin_prefix_sum.value(pos));
+      // Preserve finest-level cardinality for refinement algorithms (AON needs it).
+      hyperedge.setTopLevelSize(pin_prefix_sum.value(pos));
       if ( hyperedge_weight ) {
         hyperedge.setWeight(hyperedge_weight[pos]);
       }

@@ -195,7 +195,10 @@ template <typename PartitionedHypergraph>
 struct ObjectiveFunction<PartitionedHypergraph, Objective::aon_hypermodularity> {
   Gain operator()(const PartitionedHypergraph &phg,
                   const HyperedgeID &he) const {
-    std::size_t k = static_cast<std::size_t>(phg.edgeStrength(he) );
+    std::size_t k = static_cast<std::size_t>(phg.edgeSize(he));
+    if constexpr (!PartitionedHypergraph::is_graph) {
+      k = static_cast<std::size_t>(phg.topLevelEdgeSize(he));
+    }
     // LOG << "Hyperedge " << he << " with size " << k;
     if (k < 2) {
       LOG << RED << "Size 1 edge??";
@@ -238,7 +241,7 @@ Gain aonVolumeTerm(const PartitionedHypergraph& phg)
     // if(inner != inner_alt) {
       // LOG << RED << "Inner = " << inner << "; inner alt = " << inner_alt << WHITE;
     // }
-    term += phg.beta(d) * phg.gamma(d) * inner;
+    term += phg.gamma(d) * inner;
   }
   return term;
 }

@@ -14,4 +14,5 @@ target_sources(mt_kahypar_tests PRIVATE
          multitry_fm_test.cc
          fm_strategy_test.cc
          flow_construction_test.cc
+         aon_hypermodularity_test.cc
          )

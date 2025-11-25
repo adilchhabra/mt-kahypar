@@ -445,7 +445,12 @@ class PartitionedHypergraph {
     return _hg->edgeSize(e);
   }
 
-  // ! Number of pins of a hyperedge at top level
+  // ! Number of pins of a hyperedge on the finest level
+  HypernodeID topLevelEdgeSize(const HyperedgeID e) const {
+    return _hg->topLevelEdgeSize(e);
+  }
+
+  // ! Strength of a hyperedge (used for clustering extensions)
   HypernodeID edgeStrength(const HyperedgeID e) const {
     return _hg->edgeStrength(e);
   }
@@ -1486,7 +1491,8 @@ class PartitionedHypergraph {
     sync_update.he = he;
     sync_update.edge_weight = edgeWeight(he);
     sync_update.edge_size = edgeSize(he);
-    sync_update.edge_strength = edgeStrength(he);
+    // Store the finest-level size so beta lookups stay consistent even on coarser levels.
+    sync_update.edge_strength = topLevelEdgeSize(he);
     _pin_count_update_ownership[he].lock();
     notify_func(sync_update);
     sync_update.pin_count_in_from_part_after = decrementPinCountOfBlock(he, from);

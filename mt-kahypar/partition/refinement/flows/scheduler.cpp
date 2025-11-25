@@ -67,7 +67,7 @@ bool FlowRefinementScheduler<GraphAndGainTypes>::refineImpl(
   ASSERT(_phg == &phg);
   _quotient_graph.setObjective(best_metrics.quality);
 
-  std::atomic<Gain> overall_delta(0);
+  CAtomic<Gain> overall_delta(0);
   utils::Timer& timer = utils::Utilities::instance().getTimer(_context.utility_id);
   tbb::parallel_for(UL(0), _refiner.numAvailableRefiner(), [&](const size_t i) {
     while ( i < std::max(UL(1), static_cast<size_t>(
@@ -93,7 +93,7 @@ bool FlowRefinementScheduler<GraphAndGainTypes>::refineImpl(
           if ( !sequence.moves.empty() ) {
             timer.start_timer("apply_moves", "Apply Moves", true);
             delta = applyMoves(search_id, sequence);
-            overall_delta -= delta;
+            overall_delta.sub_fetch(delta);
             improved_solution = sequence.state == MoveSequenceState::SUCCESS && delta > 0;
             timer.stop_timer("apply_moves");
           } else if ( sequence.state == MoveSequenceState::TIME_LIMIT ) {
@@ -353,7 +353,7 @@ Gain FlowRefinementScheduler<GraphAndGainTypes>::applyMoves(const SearchID searc
 
   if ( sequence.state == MoveSequenceState::SUCCESS && improvement > 0 ) {
     addCutHyperedgesToQuotientGraph(_quotient_graph, new_cut_hes);
-    _stats.total_improvement += improvement;
+    _stats.total_improvement.add_fetch(improvement);
   }
 
   return improvement;

@@ -56,6 +56,11 @@ public:
     return *this;
   }
 
+  CAtomic& operator=(const T desired) {
+    Base::store(desired, std::memory_order_relaxed);
+    return *this;
+  }
+
   // unfortunately the internal value M_i is private, so we cannot issue __atomic_add_fetch( &M_i, i, int(m) ) ourselves
   MT_KAHYPAR_ATTRIBUTE_ALWAYS_INLINE T add_fetch(T i, std::memory_order m = std::memory_order_seq_cst) {
     return Base::fetch_add(i, m) + i;
@@ -295,11 +300,11 @@ class IntegralAtomicWrapper {
   }
 
   T operator+= (T arg) noexcept {
-    return _value.operator+=(arg);
+    return _value.add_fetch(arg);
   }
 
   T operator-= (T arg) noexcept {
-    return _value.operator-=(arg);
+    return _value.sub_fetch(arg);
   }
 
   T operator&= (T arg) noexcept {
@@ -315,7 +320,7 @@ class IntegralAtomicWrapper {
   }
 
  private:
-  std::atomic<T> _value;
+  CAtomic<T> _value;
 };
 
 #pragma GCC diagnostic pop

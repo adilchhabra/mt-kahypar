@@ -221,15 +221,11 @@ namespace mt_kahypar {
         const Gain penalty = Rollback::penalty(phg, e, m_id, m, r);
 
         if ( benefit > 0 ) {
-          // increase gain of v by benefit
-          std::atomic_ref<Gain>(m.gain).fetch_add(benefit, std::memory_order_relaxed);
-          //__atomic_fetch_add(&m.gain, benefit, __ATOMIC_RELAXED);
+          m.gain += benefit;
         }
 
         if ( penalty > 0 ) {
-          // decrease gain of v by penalty
-          std::atomic_ref<Gain>(m.gain).fetch_sub(penalty, std::memory_order_relaxed);
-          //__atomic_fetch_sub(&m.gain, penalty, __ATOMIC_RELAXED);
+          m.gain -= penalty;
         }
       }
     }
@@ -305,7 +301,7 @@ namespace mt_kahypar {
       const Gain attributed_gain = AttributedGains::gain(sync_update);
       // For recomputed gains, a postive gain means improvement. However, the opposite
       // is the case for attributed gains.
-      std::atomic_ref<Gain>(m.gain).fetch_add(attributed_gain, std::memory_order_relaxed);
+      m.gain += attributed_gain;
       //__atomic_fetch_add(&m.gain, attributed_gain, __ATOMIC_RELAXED);
     }
   }
@@ -357,7 +353,7 @@ namespace mt_kahypar {
         first_m.to == second_m.from ? 2 : 1;
       sync_update.block_of_other_node = second_m.from;
       const Gain attributed_gain = AttributedGains::gain(sync_update);
-      std::atomic_ref<Gain>(first_m.gain).fetch_add(-attributed_gain, std::memory_order_relaxed);
+      first_m.gain -= attributed_gain;
       //__atomic_fetch_add(&first_m.gain, -attributed_gain, __ATOMIC_RELAXED);
 
       if ( tracker.wasNodeMovedInThisRound(second_move) )  {
@@ -370,7 +366,7 @@ namespace mt_kahypar {
           first_m.to == second_m.to ? 2 : 1;
         sync_update.block_of_other_node = first_m.to;
         const Gain attributed_gain = AttributedGains::gain(sync_update);
-        std::atomic_ref<Gain>(second_m.gain).fetch_add(-attributed_gain, std::memory_order_relaxed);
+        second_m.gain -= attributed_gain;
         //__atomic_fetch_add(&second_m.gain, -attributed_gain, __ATOMIC_RELAXED);
       }
     }

@@ -177,11 +177,22 @@ class StaticHypergraph {
   public:
     using IDType = HyperedgeID;
 
-    Hyperedge() : _begin(0), _size(0), _weight(1), _valid(false) {}
+    Hyperedge() :
+      _begin(0),
+      _size(0),
+      _top_level_size(0),
+      _weight(1),
+      _strength(0),
+      _valid(false) {}
 
     // Sentinel Constructor
-    Hyperedge(const size_t begin)
-        : _begin(begin), _size(0), _weight(1), _valid(false) {}
+    Hyperedge(const size_t begin) :
+      _begin(begin),
+      _size(0),
+      _top_level_size(0),
+      _weight(1),
+      _strength(0),
+      _valid(false) {}
 
     // ! Disables the hypernode/hyperedge. Disable hypernodes/hyperedges will be
     // skipped ! when iterating over the set of all nodes/edges.
@@ -219,6 +230,16 @@ class StaticHypergraph {
       _size = size;
     }
 
+    size_t topLevelSize() const {
+      ASSERT(!isDisabled());
+      return _top_level_size;
+    }
+
+    void setTopLevelSize(const size_t size) {
+      ASSERT(!isDisabled());
+      _top_level_size = size;
+    }
+
     HyperedgeWeight weight() const {
       ASSERT(!isDisabled());
       return _weight;
@@ -251,6 +272,8 @@ class StaticHypergraph {
     size_t _begin;
     // ! Number of pins
     size_t _size;
+    // ! Hyperedge size on the top level (before contraction)
+    size_t _top_level_size;
     // ! hyperedge weight
     HyperedgeWeight _weight;
     // ! hyperedge strength
@@ -710,6 +733,12 @@ public:
   HypernodeID edgeSize(const HyperedgeID e) const {
     ASSERT(!hyperedge(e).isDisabled(), "Hyperedge" << e << "is disabled");
     return hyperedge(e).size();
+  }
+
+  // ! Number of pins the hyperedge had on the input (finest) level
+  HypernodeID topLevelEdgeSize(const HyperedgeID e) const {
+    ASSERT(!hyperedge(e).isDisabled(), "Hyperedge" << e << "is disabled");
+    return hyperedge(e).topLevelSize();
   }
 
   // ! Maximum size of a hyperedge

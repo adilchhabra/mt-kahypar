@@ -165,6 +165,7 @@ class DynamicHypergraph {
     Hyperedge() :
       _begin(0),
       _size(0),
+      _top_level_size(0),
       _weight(1),
       _hash(kEdgeHashSeed),
       _valid(false) { }
@@ -173,6 +174,7 @@ class DynamicHypergraph {
     Hyperedge(const size_t begin) :
       _begin(begin),
       _size(0),
+      _top_level_size(0),
       _weight(1),
       _hash(kEdgeHashSeed),
       _valid(false) { }
@@ -219,6 +221,16 @@ class DynamicHypergraph {
       _size = size;
     }
 
+    size_t topLevelSize() const {
+      ASSERT(!isDisabled());
+      return _top_level_size;
+    }
+
+    void setTopLevelSize(const size_t size) {
+      ASSERT(!isDisabled());
+      _top_level_size = size;
+    }
+
     void incrementSize() {
       ASSERT(!isDisabled());
       ++_size;
@@ -260,6 +272,8 @@ class DynamicHypergraph {
     size_t _begin;
     // ! Number of pins
     size_t _size;
+    // ! hyperedge size on top level
+    size_t _top_level_size;
     // ! hyperedge weight
     HyperedgeWeight _weight;
     // ! Hash of pins
@@ -714,6 +728,11 @@ class DynamicHypergraph {
     return hyperedge(e).size();
   }
 
+  HypernodeID topLevelEdgeSize(const HyperedgeID e) const {
+    ASSERT(!hyperedge(e).isDisabled(), "Hyperedge" << e << "is disabled");
+    return hyperedge(e).topLevelSize();
+  }
+
   // ! Strength a hyperedge at top level
   HypernodeID edgeStrength(const HyperedgeID) const {
     throw NonSupportedOperationException(
@@ -774,26 +793,31 @@ class DynamicHypergraph {
   }
 
   inline void computeAONParameters(double eps = 1e-12) {
+    unused(eps);
     throw NonSupportedOperationException(
        "computeAONParameters is not supported in dynamic hypergraph");
   }
 
-  inline double beta (std::size_t k) const { 
+  inline double beta (std::size_t k) const {
+    unused(k);
     throw NonSupportedOperationException(
             "beta(k) is not supported for dynamic hypergraph");
     return 0.0;
   }
-  inline double gamma (std::size_t k) const { 
+  inline double gamma (std::size_t k) const {
+    unused(k);
     throw NonSupportedOperationException(
             "gamma(k) is not supported for dynamic hypergraph");
     return 0.0;
   }
-  inline double omegaIn (std::size_t k) const { 
+  inline double omegaIn (std::size_t k) const {
+    unused(k);
     throw NonSupportedOperationException(
             "omegaIn(k) is not supported for dynamic hypergraph");
     return 0.0;
   }
-  inline double omegaOut (std::size_t k) const { 
+  inline double omegaOut (std::size_t k) const {
+    unused(k);
     throw NonSupportedOperationException(
             "omegaOut(k) is not supported for dynamic hypergraph");
     return 0.0;
